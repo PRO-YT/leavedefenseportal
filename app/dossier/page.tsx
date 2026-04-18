@@ -728,7 +728,9 @@ function DossierPageContent() {
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#97b296]">
                     Search Dossier
                   </p>
-                  <p className="text-sm text-[#dde7db]">Example: `USM-SW-2011-8824`</p>
+                  <p className="text-sm text-[#dde7db]">
+                    Use an issued service number or verified service email.
+                  </p>
                 </div>
               </div>
               <div className="mt-4 flex flex-wrap gap-3">

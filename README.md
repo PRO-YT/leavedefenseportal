@@ -95,7 +95,7 @@ If seeding fails with Firestore API disabled, enable:
 
 Default admin access is configured through `.env.local` so it can be changed later without editing app code:
 
-- `NEXT_PUBLIC_ADMIN_ACCESS_EMAIL`
+- `ADMIN_ACCESS_EMAIL`
 - `ADMIN_ACCESS_PASSWORD`
 - `ADMIN_ACCESS_DISPLAY_NAME`
 - `ADMIN_PORTAL_PATH`

@@ -36,7 +36,7 @@ export function MemberIdSearchForm({ service }: MemberIdSearchFormProps) {
         type="text"
         value={memberId}
         onChange={(event) => setMemberId(event.target.value)}
-        placeholder="Enter Member ID Number"
+        placeholder="Enter issued service number"
         className="w-full px-5 py-4 text-base text-[#1c2f51] outline-none sm:text-lg"
       />
       <button
@@ -49,4 +49,3 @@ export function MemberIdSearchForm({ service }: MemberIdSearchFormProps) {
     </form>
   );
 }
-

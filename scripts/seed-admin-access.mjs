@@ -32,16 +32,13 @@ function loadEnvFile(filePath) {
 loadEnvFile(envPath);
 
 const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-const adminEmail =
-  process.env.ADMIN_ACCESS_EMAIL?.trim() ||
-  process.env.NEXT_PUBLIC_ADMIN_ACCESS_EMAIL?.trim() ||
-  "awele131@gmail.com";
+const adminEmail = process.env.ADMIN_ACCESS_EMAIL?.trim();
 const adminPassword = process.env.ADMIN_ACCESS_PASSWORD?.trim();
 const adminDisplayName = process.env.ADMIN_ACCESS_DISPLAY_NAME?.trim() || "Logistics Officer";
 
 const missingKeys = [
   !apiKey && "NEXT_PUBLIC_FIREBASE_API_KEY",
-  !adminEmail && "NEXT_PUBLIC_ADMIN_ACCESS_EMAIL",
+  !adminEmail && "ADMIN_ACCESS_EMAIL",
   !adminPassword && "ADMIN_ACCESS_PASSWORD",
 ].filter(Boolean);
 
@@ -146,7 +143,7 @@ async function ensureAdminUser() {
 
   console.log(`Admin access is ready for ${adminEmail}.`);
   console.log(
-    "Change it later by updating NEXT_PUBLIC_ADMIN_ACCESS_EMAIL and ADMIN_ACCESS_PASSWORD in .env.local, then rerunning npm run seed:admin.",
+    "Change it later by updating ADMIN_ACCESS_EMAIL and ADMIN_ACCESS_PASSWORD in .env.local, then rerunning npm run seed:admin.",
   );
 }
 

@@ -31,7 +31,6 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { adminAccessEmail, isAuthorizedAdminEmail } from "@/lib/admin-access";
 import { firebaseAuth, firebaseDb } from "@/lib/firebase/client";
 import { firebaseEnvErrorMessage } from "@/lib/firebase/config";
 import {
@@ -40,6 +39,8 @@ import {
   type SupportRequestDocument,
   type SupportRequestRecord,
 } from "@/lib/support-requests";
+
+const DEFAULT_HANDLED_BY = "Logistics Officer Desk";
 
 function sanitizePhone(phone: string | undefined) {
   if (!phone) {
@@ -224,6 +225,26 @@ function getSocialEntries(request: SupportRequestRecord) {
     }));
 }
 
+async function authorizeAdminSession(user: User) {
+  const idToken = await user.getIdToken();
+  const response = await fetch("/api/admin/authorize", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ idToken }),
+  });
+
+  const data = (await response.json().catch(() => ({}))) as {
+    authorized?: boolean;
+    message?: string;
+  };
+
+  if (!response.ok || !data.authorized) {
+    throw new Error(data.message || "This credential set is not authorized for logistics access.");
+  }
+}
+
 export default function AdminPage() {
   const firebaseUnavailable = !firebaseAuth || !firebaseDb;
   const [securitySweep, setSecuritySweep] = useState(() => new Date());
@@ -252,21 +273,26 @@ export default function AdminPage() {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setAuthLoading(false);
-
       if (!user) {
         setAdminUser(null);
+        setAuthLoading(false);
         return;
       }
 
-      if (!isAuthorizedAdminEmail(user.email)) {
-        setLoginStatus("This credential set is not authorized for logistics access.");
+      setAuthLoading(true);
+
+      try {
+        await authorizeAdminSession(user);
+        setAdminUser(user);
+        setLoginStatus("");
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        setLoginStatus(message);
+        setAdminUser(null);
         await signOut(auth);
-        return;
+      } finally {
+        setAuthLoading(false);
       }
-
-      setAdminUser(user);
-      setLoginStatus("");
     });
 
     return () => unsubscribe();
@@ -341,17 +367,12 @@ export default function AdminPage() {
       return;
     }
 
-    if (!isAuthorizedAdminEmail(email)) {
-      setLoginStatus("This credential set is not authorized for logistics access.");
-      return;
-    }
-
     setLoggingIn(true);
     setLoginStatus("Authenticating...");
 
     try {
       await signInWithEmailAndPassword(firebaseAuth, email.trim(), password);
-      setLoginStatus("Access granted.");
+      setLoginStatus("Verifying access clearance...");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       setLoginStatus(`Login failed: ${message}`);
@@ -378,7 +399,7 @@ export default function AdminPage() {
       await updateDoc(doc(firebaseDb, "requests", requestId), {
         status: nextStatus,
         last_updated: serverTimestamp(),
-        handled_by: adminUser?.email ?? adminAccessEmail,
+        handled_by: adminUser?.email ?? DEFAULT_HANDLED_BY,
       });
     } finally {
       setUpdatingId("");
@@ -464,7 +485,7 @@ export default function AdminPage() {
               </div>
               <div className="grid gap-4 px-5 py-5 sm:px-6">
                 {[
-                  "Officer access is validated through Firebase Authentication and a restricted authorized email check.",
+                  "Officer access is validated through Firebase Authentication and a server-side restricted identity check.",
                   "All support applications are streamed from the Firestore command ledger in real time after sign-in.",
                   "Request packets can include requester identity, location, address, social contact paths, and optional ID evidence.",
                 ].map((item) => (
@@ -719,7 +740,9 @@ export default function AdminPage() {
                               <p>
                                 <span className="text-[#9db29d]">Handled By</span>
                                 <br />
-                                {selectedRequest.data.handled_by ?? adminUser.email ?? adminAccessEmail}
+                                {selectedRequest.data.handled_by ??
+                                  adminUser.email ??
+                                  DEFAULT_HANDLED_BY}
                               </p>
                               <p>
                                 <span className="text-[#9db29d]">Last Updated</span>
