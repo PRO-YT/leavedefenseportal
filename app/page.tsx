@@ -35,7 +35,6 @@ const navLinks = [
   { href: "/dossier?service=FLIGHT", label: "Apply Online", icon: ListChecks },
   { href: "#news", label: "News", icon: Newspaper },
   { href: "/dossier", label: "Dossier Portal", icon: BadgeCheck },
-  { href: "/admin", label: "Admin Hub", icon: ShieldCheck },
 ];
 
 const supportCards = [

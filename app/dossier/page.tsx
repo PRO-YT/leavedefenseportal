@@ -33,7 +33,6 @@ import {
   Fingerprint,
   Globe,
   MapPinned,
-  ShieldAlert,
   UserRoundSearch,
   X,
 } from "lucide-react";
@@ -682,13 +681,6 @@ function DossierPageContent() {
             >
               <ArrowLeft className="h-4 w-4" />
               Return Home
-            </Link>
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-2 rounded-xl border border-[#7a6432] bg-[#1b2314] px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#f2d271] transition hover:bg-[#232f1b]"
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Open Admin Hub
             </Link>
           </div>
         </header>

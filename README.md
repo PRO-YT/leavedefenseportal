@@ -22,10 +22,10 @@ Open `http://localhost:3000`.
 
 - `/` is the protected-entry landing and sign-in experience.
 - `/dossier` is the public service-record dossier portal with support request submission.
-- `/admin` is the secure mission-control admin hub (Firebase Auth gated).
+- The admin console is only exposed through the private path set in `ADMIN_PORTAL_PATH` and still remains Firebase Auth gated.
 - `/portal` contains the operational workspace.
 - Server actions handle authentication and leave packet validation.
-- `proxy.ts` performs optimistic route protection for portal pages.
+- `proxy.ts` performs optimistic route protection for portal pages and rewrites the private admin route.
 - `lib/session.ts` signs and validates the session cookie.
 
 ## Important note
@@ -98,6 +98,7 @@ Default admin access is configured through `.env.local` so it can be changed lat
 - `NEXT_PUBLIC_ADMIN_ACCESS_EMAIL`
 - `ADMIN_ACCESS_PASSWORD`
 - `ADMIN_ACCESS_DISPLAY_NAME`
+- `ADMIN_PORTAL_PATH`
 
 Bootstrap or verify the Firebase Auth admin account with:
 
@@ -107,4 +108,4 @@ npm run seed:admin
 
 If the bootstrap reports that Firebase Authentication is not initialized, open Firebase Console, click `Authentication`, choose `Get started`, and enable the `Email/Password` provider before rerunning the script.
 
-If you change the admin email or password later, update `.env.local` and rerun `npm run seed:admin`.
+If you change the admin email, password, or hidden admin route later, update `.env.local` and redeploy if needed. Only the path set in `ADMIN_PORTAL_PATH` will open the admin console; the old `/admin` URL is no longer the public entry point.
