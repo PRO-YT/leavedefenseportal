@@ -737,6 +737,8 @@ function DossierPageContent() {
         member_service_number: displayServiceNumber,
         member_name: member.data.full_name ?? "",
         member_rank: member.data.rank ?? "",
+        member_branch: member.data.branch ?? "",
+        member_unit: member.data.unit ?? "",
         member_email: member.data.email ?? "",
         member_phone: member.data.phone ?? "",
         requester_name: requesterName.trim(),

@@ -9,6 +9,8 @@ import type { Timestamp } from "firebase/firestore";
 
 export type ServiceType = "FLIGHT" | "CALL_TIME" | "SHOPPING" | "MWR";
 export type RequestStatus = "UNREVIEWED" | "IN PROGRESS" | "OFFICER CONTACTED" | "COMPLETED";
+export type AdminProtocolType = "FLIGHT" | "COMMS" | "SHOPPING" | "MWR";
+export type ShoppingWeightType = "LIGHT" | "MEDIUM" | "HEAVY";
 
 export interface RequestAddress {
   line1?: string;
@@ -51,6 +53,8 @@ export interface SupportRequestDocument {
   member_service_number?: string;
   member_name?: string;
   member_rank?: string;
+  member_branch?: string;
+  member_unit?: string;
   member_email?: string;
   member_phone?: string;
   requester_name?: string;
@@ -69,6 +73,15 @@ export interface SupportRequestDocument {
   signal_window_initialized_at?: Timestamp;
   signal_window_expires_at?: Timestamp;
   signal_window_memo?: string;
+  protocol_selected?: AdminProtocolType;
+  protocol_memo?: string;
+  protocol_memo_generated_at?: Timestamp;
+  shopping_weight?: ShoppingWeightType;
+  shopping_amount?: number;
+  supply_manifest_items?: string[];
+  mwr_donation_amount?: number;
+  mwr_impact_label?: string;
+  tax_documentation_status?: string;
   contact?: RequestContactBundle;
   social_contacts?: RequestSocialContacts;
   identification?: RequestIdentification;

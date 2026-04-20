@@ -22,25 +22,99 @@ import {
   ArrowLeft,
   BellDot,
   CircleCheckBig,
+  FileText,
   Mail,
   MapPinned,
   PhoneCall,
+  Package,
   RadioTower,
+  Send,
   ShieldAlert,
   ShieldCheck,
+  Timer,
   UserRound,
 } from "lucide-react";
 
 import { firebaseAuth, firebaseDb } from "@/lib/firebase/client";
 import { firebaseEnvErrorMessage } from "@/lib/firebase/config";
 import {
+  type AdminProtocolType,
   type RequestStatus,
   type RequestSocialContacts,
+  type ServiceType,
+  type ShoppingWeightType,
   type SupportRequestDocument,
   type SupportRequestRecord,
 } from "@/lib/support-requests";
 
 const DEFAULT_HANDLED_BY = "Logistics Officer Desk";
+const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+const DEFAULT_SUPPLY_ITEMS = [
+  "Hygiene and wellness supplies",
+  "Shelf-stable morale support items",
+  "Replacement personal essentials",
+].join("\n");
+
+type AdminProtocol = AdminProtocolType;
+type ShoppingWeight = ShoppingWeightType;
+
+const PROTOCOL_OPTIONS: Array<{
+  value: AdminProtocol;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "FLIGHT",
+    label: "Flight",
+    description: "Travel coordination and itinerary follow-up.",
+  },
+  {
+    value: "COMMS",
+    label: "Comms",
+    description: "Call-time, recharge, and family contact support.",
+  },
+  {
+    value: "SHOPPING",
+    label: "Shopping",
+    description: "Package weight pricing, procurement notes, and manifest drafts.",
+  },
+  {
+    value: "MWR",
+    label: "MWR",
+    description: "Morale, welfare, recreation, and impact acknowledgment support.",
+  },
+];
+
+const SHOPPING_WEIGHT_PRICING: Record<
+  ShoppingWeight,
+  {
+    label: string;
+    amount: number;
+    description: string;
+  }
+> = {
+  LIGHT: {
+    label: "Light",
+    amount: 250,
+    description: "Small personal essentials and low-weight morale items.",
+  },
+  MEDIUM: {
+    label: "Medium",
+    amount: 450,
+    description: "Mixed supply pack with moderate handling requirements.",
+  },
+  HEAVY: {
+    label: "Heavy / Urgent",
+    amount: 700,
+    description: "High-weight or expedited support requiring elevated handling.",
+  },
+};
+
+const DONATION_IMPACT_TIERS = [
+  { amount: 100, label: "Platoon Internet Access" },
+  { amount: 500, label: "Unit Recreation Event" },
+  { amount: 1000, label: "Deployed Family Support" },
+];
 
 function sanitizePhone(phone: string | undefined) {
   if (!phone) {
@@ -128,6 +202,169 @@ function formatSignalTime(value: Date) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function getProtocolOption(protocol: AdminProtocol) {
+  return PROTOCOL_OPTIONS.find((option) => option.value === protocol) ?? PROTOCOL_OPTIONS[0];
+}
+
+function protocolFromRequestType(requestType: ServiceType | undefined): AdminProtocol {
+  if (requestType === "CALL_TIME") {
+    return "COMMS";
+  }
+
+  if (requestType === "SHOPPING" || requestType === "MWR" || requestType === "FLIGHT") {
+    return requestType;
+  }
+
+  return "FLIGHT";
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 0,
+    style: "currency",
+  }).format(amount);
+}
+
+function getDonationImpact(amount: number) {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const matchingTier = [...DONATION_IMPACT_TIERS]
+    .sort((left, right) => right.amount - left.amount)
+    .find((tier) => safeAmount >= tier.amount);
+
+  return matchingTier ?? { amount: 0, label: "General Morale Support" };
+}
+
+function parseSupplyItems(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function escapeHtml(value: string | number | undefined) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getMemberUnit(request: SupportRequestRecord) {
+  return request.data.member_unit || "Unit not supplied";
+}
+
+function buildProtocolSubject(protocol: AdminProtocol, request: SupportRequestRecord) {
+  return `Support Notice: ${getProtocolOption(protocol).label} Protocol ID-${request.id}`;
+}
+
+function buildProtocolMemo({
+  donationAmount,
+  generatedAt,
+  protocol,
+  request,
+  shoppingWeight,
+  supplyItems,
+}: {
+  donationAmount: number;
+  generatedAt: Date;
+  protocol: AdminProtocol;
+  request: SupportRequestRecord;
+  shoppingWeight: ShoppingWeight;
+  supplyItems: string;
+}) {
+  const protocolOption = getProtocolOption(protocol);
+  const deadline = new Date(generatedAt.getTime() + FOUR_HOURS_MS);
+  const memberId = getRequestMemberId(request);
+  const memberRank = request.data.member_rank || "Rank not supplied";
+  const memberName = request.data.member_name || "Member name not supplied";
+  const preferredChannel = request.data.contact?.preferred_channel || "Not specified";
+  const requesterName = getRequesterName(request);
+  const requesterRelationship = getRequesterRelationship(request);
+  const familyPhone = getFamilyPhone(request) || "Phone number not supplied";
+  const familyEmail = getFamilyEmail(request) || "Email not supplied";
+  const shoppingTier = SHOPPING_WEIGHT_PRICING[shoppingWeight];
+  const donationImpact = getDonationImpact(donationAmount);
+  const parsedSupplyItems = parseSupplyItems(supplyItems);
+  const itemSummary =
+    parsedSupplyItems.length > 0
+      ? parsedSupplyItems.join("; ")
+      : "Items pending officer review";
+
+  const header = [
+    `${protocolOption.label.toUpperCase()} PROTOCOL MEMO`,
+    `Request ID: ${request.id}`,
+    `Member ID: ${memberId}`,
+    `Rank: ${memberRank}`,
+    `Member: ${memberName}`,
+    `Requester: ${requesterName} (${requesterRelationship})`,
+    `Family Phone: ${familyPhone}`,
+    `Family Email: ${familyEmail}`,
+    `Preferred Contact Channel: ${preferredChannel}`,
+    `Generated: ${formatSignalTime(generatedAt)}`,
+    "",
+  ];
+
+  if (protocol === "SHOPPING") {
+    return [
+      ...header,
+      "Paragraph 1: Your procurement support request has been opened for logistics officer review. The details below are being used to classify the package, confirm item availability, and prepare the family follow-up route.",
+      `Paragraph 2: The selected package class is ${shoppingTier.label}. The current planning amount is ${formatCurrency(shoppingTier.amount)} based on package weight and handling requirements.`,
+      `Paragraph 3: Items currently listed for procurement review: ${itemSummary}. Substitutions, vendor availability, and delivery constraints will be confirmed before any final instruction is issued.`,
+      `Paragraph 4: Contact routing will prioritize ${preferredChannel}. If that route is unavailable, the logistics officer may use the family phone or email listed above to prevent delays.`,
+      `Paragraph 5: Sortie Countdown - this shopping memo was generated at ${formatSignalTime(generatedAt)}. The four-hour response window closes at ${formatSignalTime(deadline)}; please reply before expiry with item confirmations, substitutions, or any urgent changes.`,
+      "Paragraph 6: This memo is a planning notice only. A supply manifest draft may be generated for review, but it is not a payment receipt, tax document, or confirmation that funds were received.",
+      "",
+      "Respectfully,",
+      DEFAULT_HANDLED_BY,
+    ].join("\n");
+  }
+
+  if (protocol === "MWR") {
+    return [
+      ...header,
+      "Paragraph 1: Your morale, welfare, and recreation support request has been routed for eligibility and impact review.",
+      `Paragraph 2: The current support amount is ${formatCurrency(donationAmount)} with the impact label "${donationImpact.label}". This label explains the intended support category for family-facing coordination.`,
+      `Paragraph 3: The request is associated with ${memberRank} ${memberName}, Member ID ${memberId}, and unit reference: ${getMemberUnit(request)}.`,
+      `Paragraph 4: Contact routing will prioritize ${preferredChannel}. The logistics officer will use the family-provided phone or email if additional verification is required.`,
+      `Paragraph 5: Coordination Countdown - this MWR memo was generated at ${formatSignalTime(generatedAt)}. The four-hour response window closes at ${formatSignalTime(deadline)} so the family can confirm donor name, spelling, and acknowledgment details.`,
+      "Paragraph 6: Tax-exempt language must be backed by verified organizational records before it is displayed. Any appreciation certificate generated here is an acknowledgment draft only and is not a tax receipt.",
+      "",
+      "Respectfully,",
+      DEFAULT_HANDLED_BY,
+    ].join("\n");
+  }
+
+  if (protocol === "COMMS") {
+    return [
+      ...header,
+      "Paragraph 1: Your communications support request has been opened for logistics officer review and family follow-up.",
+      `Paragraph 2: This request is associated with ${memberRank} ${memberName}, Member ID ${memberId}. The current service lane is call-time, recharge, or family contact support.`,
+      `Paragraph 3: The officer will verify destination network, activation timing, and any restrictions recorded in the family notes before final coordination.`,
+      `Paragraph 4: Contact routing will prioritize ${preferredChannel}, with WhatsApp, phone, email, or social contact paths used only when provided by the family.`,
+      `Paragraph 5: Signal Countdown - this communications memo was generated at ${formatSignalTime(generatedAt)}. The four-hour response window closes at ${formatSignalTime(deadline)} for confirmation of provider, phone number, and preferred activation window.`,
+      "Paragraph 6: This memo is a coordination preview and should be reviewed by the officer before dispatch.",
+      "",
+      "Respectfully,",
+      DEFAULT_HANDLED_BY,
+    ].join("\n");
+  }
+
+  return [
+    ...header,
+    "Paragraph 1: Your flight support request has been opened for travel coordination review.",
+    `Paragraph 2: This request is associated with ${memberRank} ${memberName}, Member ID ${memberId}, and will be reviewed against the details provided by the family.`,
+    "Paragraph 3: The officer will confirm traveler names, departure city, destination city, timing, mobility needs, and any urgent restrictions before follow-up.",
+    `Paragraph 4: Contact routing will prioritize ${preferredChannel}. Backup outreach may use family phone, email, WhatsApp, or supplied social paths as available.`,
+    `Paragraph 5: Flight Coordination Countdown - this memo was generated at ${formatSignalTime(generatedAt)}. The four-hour response window closes at ${formatSignalTime(deadline)} for itinerary readiness and schedule confirmation.`,
+    "Paragraph 6: This memo is a coordination preview and should be reviewed by the officer before dispatch.",
+    "",
+    "Respectfully,",
+    DEFAULT_HANDLED_BY,
+  ].join("\n");
 }
 
 function buildSignalWindowMemo(
@@ -289,6 +526,28 @@ function getSocialEntries(request: SupportRequestRecord) {
     }));
 }
 
+function buildSocialDispatchHref(
+  entry: ReturnType<typeof getSocialEntries>[number],
+  memo: string,
+) {
+  const encodedMemo = encodeURIComponent(memo);
+
+  if (entry.key === "whatsapp") {
+    const digits = sanitizePhone(entry.value);
+    return digits ? `https://wa.me/${digits}?text=${encodedMemo}` : entry.href;
+  }
+
+  if (entry.key === "telegram") {
+    return `https://t.me/share/url?text=${encodedMemo}`;
+  }
+
+  if (entry.key === "x") {
+    return `https://x.com/intent/post?text=${encodedMemo}`;
+  }
+
+  return entry.href;
+}
+
 async function authorizeAdminSession(user: User) {
   const idToken = await user.getIdToken();
   const response = await fetch("/api/admin/authorize", {
@@ -324,6 +583,11 @@ export default function AdminPage() {
   const [updatingId, setUpdatingId] = useState("");
   const [initializingSignalId, setInitializingSignalId] = useState("");
   const [signalStatus, setSignalStatus] = useState("");
+  const [selectedProtocol, setSelectedProtocol] = useState<AdminProtocol>("FLIGHT");
+  const [shoppingWeight, setShoppingWeight] = useState<ShoppingWeight>("LIGHT");
+  const [donationAmount, setDonationAmount] = useState(100);
+  const [supplyItems, setSupplyItems] = useState(DEFAULT_SUPPLY_ITEMS);
+  const [protocolStatus, setProtocolStatus] = useState("");
 
   useEffect(() => {
     const sweepInterval = window.setInterval(() => setSecuritySweep(new Date()), 60_000);
@@ -421,6 +685,42 @@ export default function AdminPage() {
 
     return requests.find((record) => record.id === selectedRequestId) ?? requests[0];
   }, [requests, selectedRequestId]);
+  const selectedRequestKey = selectedRequest?.id ?? "";
+  const selectedRequestType = selectedRequest?.data.request_type;
+
+  useEffect(() => {
+    if (!selectedRequestKey) {
+      return;
+    }
+
+    setSelectedProtocol(protocolFromRequestType(selectedRequestType));
+    setProtocolStatus("");
+  }, [selectedRequestKey, selectedRequestType]);
+
+  const shoppingPricing = SHOPPING_WEIGHT_PRICING[shoppingWeight];
+  const donationImpact = getDonationImpact(donationAmount);
+
+  const protocolMemo = useMemo(() => {
+    if (!selectedRequest) {
+      return "";
+    }
+
+    return buildProtocolMemo({
+      donationAmount,
+      generatedAt: securitySweep,
+      protocol: selectedProtocol,
+      request: selectedRequest,
+      shoppingWeight,
+      supplyItems,
+    });
+  }, [
+    donationAmount,
+    securitySweep,
+    selectedProtocol,
+    selectedRequest,
+    shoppingWeight,
+    supplyItems,
+  ]);
 
   async function handleLogin() {
     if (!firebaseAuth) {
@@ -524,6 +824,276 @@ export default function AdminPage() {
     } finally {
       setInitializingSignalId("");
     }
+  }
+
+  async function persistProtocolSnapshot(
+    request: SupportRequestRecord,
+    memo: string,
+    generatedAt: Date,
+  ) {
+    if (!firebaseDb) {
+      return;
+    }
+
+    const payload: Record<string, unknown> = {
+      handled_by: adminUser?.email ?? DEFAULT_HANDLED_BY,
+      last_updated: serverTimestamp(),
+      protocol_memo: memo,
+      protocol_memo_generated_at: generatedAt,
+      protocol_selected: selectedProtocol,
+    };
+
+    if (selectedProtocol === "SHOPPING") {
+      payload.shopping_amount = shoppingPricing.amount;
+      payload.shopping_weight = shoppingWeight;
+      payload.supply_manifest_items = parseSupplyItems(supplyItems);
+    }
+
+    if (selectedProtocol === "MWR") {
+      payload.mwr_donation_amount = donationAmount;
+      payload.mwr_impact_label = donationImpact.label;
+      payload.tax_documentation_status = "verification_required";
+    }
+
+    await updateDoc(doc(firebaseDb, "requests", request.id), payload);
+  }
+
+  async function dispatchProtocolMemo(
+    request: SupportRequestRecord,
+    channel: "email" | "whatsapp",
+  ) {
+    const generatedAt = new Date();
+    const memo = buildProtocolMemo({
+      donationAmount,
+      generatedAt,
+      protocol: selectedProtocol,
+      request,
+      shoppingWeight,
+      supplyItems,
+    });
+
+    setProtocolStatus(`Preparing ${channel === "whatsapp" ? "WhatsApp" : "email"} dispatch...`);
+
+    try {
+      await persistProtocolSnapshot(request, memo, generatedAt);
+
+      if (channel === "whatsapp") {
+        const userPhone = sanitizePhone(getFamilyPhone(request) || getPrimaryPhone(request));
+
+        if (!userPhone) {
+          setProtocolStatus("No family-provided phone number is available for WhatsApp dispatch.");
+          return;
+        }
+
+        window.open("https://wa.me/" + userPhone + "?text=" + encodeURIComponent(memo));
+        setProtocolStatus("WhatsApp dispatch window opened with the generated protocol memo.");
+        return;
+      }
+
+      const userEmail = getFamilyEmail(request) || getPrimaryEmail(request);
+      if (!userEmail) {
+        setProtocolStatus("No family-provided email address is available for email dispatch.");
+        return;
+      }
+
+      window.location.href =
+        "mailto:" +
+        userEmail +
+        "?subject=" +
+        encodeURIComponent(buildProtocolSubject(selectedProtocol, request)) +
+        "&body=" +
+        encodeURIComponent(memo);
+      setProtocolStatus("Email client opened with the generated protocol memo.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setProtocolStatus(`Protocol dispatch failed: ${message}`);
+    }
+  }
+
+  async function dispatchSocialProtocolMemo(
+    entry: ReturnType<typeof getSocialEntries>[number],
+    request: SupportRequestRecord,
+  ) {
+    const generatedAt = new Date();
+    const memo = buildProtocolMemo({
+      donationAmount,
+      generatedAt,
+      protocol: selectedProtocol,
+      request,
+      shoppingWeight,
+      supplyItems,
+    });
+    const href = buildSocialDispatchHref(entry, memo);
+
+    if (!href) {
+      setProtocolStatus(`${entry.label} does not have an openable contact path.`);
+      return;
+    }
+
+    setProtocolStatus(`Preparing ${entry.label} dispatch path...`);
+
+    try {
+      await persistProtocolSnapshot(request, memo, generatedAt);
+      await navigator.clipboard?.writeText(memo).catch(() => undefined);
+      window.open(href, "_blank", "noreferrer");
+      setProtocolStatus(
+        `${entry.label} opened. The memo was copied when browser permissions allowed it.`,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setProtocolStatus(`Social dispatch failed: ${message}`);
+    }
+  }
+
+  function openPrintableDocument(title: string, bodyHtml: string) {
+    const popup = window.open("", "_blank", "width=920,height=1100");
+
+    if (!popup) {
+      setProtocolStatus("Pop-up blocked. Allow pop-ups for this admin site, then try again.");
+      return;
+    }
+
+    popup.document.write(`<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(title)}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #f3f1e8;
+        color: #162015;
+        font-family: Georgia, "Times New Roman", serif;
+      }
+      main {
+        width: min(920px, calc(100% - 40px));
+        margin: 24px auto;
+        background: #fffef8;
+        border: 2px solid #26351f;
+        padding: 34px;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.16);
+      }
+      h1, h2, p { margin: 0; }
+      h1 { font-size: 34px; letter-spacing: 0.06em; text-transform: uppercase; }
+      h2 { font-size: 18px; margin-top: 10px; color: #546235; }
+      p { line-height: 1.65; }
+      .muted { color: #596654; }
+      .badge {
+        display: inline-block;
+        margin-top: 14px;
+        border: 1px solid #8a7430;
+        border-radius: 999px;
+        padding: 7px 12px;
+        color: #5c4713;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 24px; }
+      .card { border: 1px solid #ccd2c3; border-radius: 14px; padding: 14px; background: #faf9f2; }
+      .label { color: #6a7662; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+      .value { margin-top: 4px; font-size: 16px; font-weight: 700; }
+      table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+      th, td { border: 1px solid #c7cebd; padding: 12px; text-align: left; vertical-align: top; }
+      th { background: #ecedde; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+      .notice { margin-top: 24px; border-left: 4px solid #8a7430; background: #f7f1db; padding: 14px; }
+      .certificate {
+        min-height: 720px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        border: 8px double #26351f;
+        padding: 34px;
+      }
+      .crest {
+        display: inline-grid;
+        height: 112px;
+        width: 112px;
+        place-items: center;
+        border: 2px solid #8a7430;
+        border-radius: 999px;
+        color: #8a7430;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      @media print {
+        body { background: #fff; }
+        main { width: 100%; margin: 0; box-shadow: none; border: 0; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>${bodyHtml}</main>
+    <script>window.setTimeout(function () { window.print(); }, 300);</script>
+  </body>
+</html>`);
+    popup.document.close();
+    popup.focus();
+  }
+
+  function generateSupplyManifest(request: SupportRequestRecord) {
+    const generatedAt = new Date();
+    const items = parseSupplyItems(supplyItems);
+    const rows = (items.length > 0 ? items : ["Items pending officer review"])
+      .map(
+        (item, index) =>
+          `<tr><td>${index + 1}</td><td>${escapeHtml(item)}</td><td>Procurement review</td></tr>`,
+      )
+      .join("");
+
+    openPrintableDocument(
+      "Supply Manifest Draft",
+      `<section>
+        <h1>Supply Manifest Draft</h1>
+        <h2>Planning document - not a payment receipt</h2>
+        <span class="badge">Procurement Review Copy</span>
+        <div class="grid">
+          <div class="card"><p class="label">Request ID</p><p class="value">${escapeHtml(request.id)}</p></div>
+          <div class="card"><p class="label">Generated</p><p class="value">${escapeHtml(formatSignalTime(generatedAt))}</p></div>
+          <div class="card"><p class="label">Member</p><p class="value">${escapeHtml(request.data.member_rank || "")} ${escapeHtml(request.data.member_name || "Not supplied")}</p></div>
+          <div class="card"><p class="label">Member ID</p><p class="value">${escapeHtml(getRequestMemberId(request))}</p></div>
+          <div class="card"><p class="label">Package Class</p><p class="value">${escapeHtml(shoppingPricing.label)}</p></div>
+          <div class="card"><p class="label">Planning Amount</p><p class="value">${escapeHtml(formatCurrency(shoppingPricing.amount))}</p></div>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Item Being Procured</th><th>Status</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="notice">This supply manifest is a draft for officer review and family coordination. It does not confirm payment, shipment, tax treatment, or final procurement approval.</p>
+      </section>`,
+    );
+    setProtocolStatus("Supply manifest draft opened. Use the browser print dialog to save as PDF.");
+  }
+
+  function generateAppreciationCertificate(request: SupportRequestRecord) {
+    const generatedAt = new Date();
+    const impact = getDonationImpact(donationAmount);
+
+    openPrintableDocument(
+      "Certificate of Appreciation Draft",
+      `<section class="certificate">
+        <div>
+          <div class="crest">Unit<br />Emblem<br />Area</div>
+          <h1 style="margin-top: 22px;">Certificate of Appreciation</h1>
+          <h2>Draft acknowledgment - not a tax receipt</h2>
+          <p style="margin-top: 28px; font-size: 19px;">Presented to</p>
+          <p style="margin-top: 10px; font-size: 32px; font-weight: 700;">${escapeHtml(getRequesterName(request))}</p>
+          <p style="margin: 26px auto 0; max-width: 620px; font-size: 18px;">
+            In recognition of support pledged toward ${escapeHtml(impact.label)} for the family-facing MWR coordination record associated with ${escapeHtml(request.data.member_rank || "Rank not supplied")} ${escapeHtml(request.data.member_name || "Member not supplied")}.
+          </p>
+          <p style="margin-top: 24px;" class="muted">Unit reference: ${escapeHtml(getMemberUnit(request))}</p>
+          <p style="margin-top: 8px;" class="muted">Generated ${escapeHtml(formatSignalTime(generatedAt))} | Request ${escapeHtml(request.id)}</p>
+          <p class="notice" style="text-align: left;">Tax-exempt or receipt language must be issued only after verified organization records and payment records are attached by an authorized administrator.</p>
+        </div>
+      </section>`,
+    );
+    setProtocolStatus(
+      "Certificate draft opened. Use the browser print dialog to save as PDF after review.",
+    );
   }
 
   return (
@@ -715,6 +1285,40 @@ export default function AdminPage() {
                   </p>
                   <p className="mt-2 text-sm text-[#97ab98]">
                     Select a case to open the full logistics review board.
+                  </p>
+                </div>
+
+                <div className="border-b border-[#2d4031] px-5 py-4">
+                  <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
+                    <Send className="h-4 w-4" />
+                    Protocol Switcher
+                  </p>
+                  <label
+                    htmlFor="protocol-switcher"
+                    className="mt-4 block text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]"
+                  >
+                    Choose Protocol
+                  </label>
+                  <select
+                    id="protocol-switcher"
+                    value={selectedProtocol}
+                    onChange={(event) => {
+                      setSelectedProtocol(event.target.value as AdminProtocol);
+                      setProtocolStatus("");
+                    }}
+                    className="mt-2 w-full rounded-xl border border-[#40533f] bg-[#0d1510] px-3 py-3 text-sm font-semibold text-[#eef4ec] outline-none focus:border-[#d4b55a]"
+                  >
+                    {PROTOCOL_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-3 text-sm leading-6 text-[#9fb2a0]">
+                    {getProtocolOption(selectedProtocol).description}
+                  </p>
+                  <p className="mt-3 rounded-[16px] border border-[#344834] bg-black/20 px-3 py-2 text-xs leading-5 text-[#c8d5c8]">
+                    Active case: {selectedRequest ? selectedRequest.id : "No request selected"}
                   </p>
                 </div>
 
@@ -948,6 +1552,230 @@ export default function AdminPage() {
                       </div>
 
                       <div className="grid gap-5">
+                        <article className="rounded-[24px] border border-[#314332] bg-black/20 p-4">
+                          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d6b14f]">
+                            <FileText className="h-4 w-4" />
+                            Protocol Memo Builder
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-[#aebfaf]">
+                            Review the selected request, choose the protocol, then dispatch the
+                            finalized memo through the family&apos;s available contact route.
+                          </p>
+
+                          <div className="mt-4 grid gap-4">
+                            <div className="rounded-[20px] border border-[#40533f] bg-[#0d1510] p-4">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
+                                    Active Protocol
+                                  </p>
+                                  <p className="mt-1 font-display text-2xl font-semibold text-[#f2f7f2]">
+                                    {getProtocolOption(selectedProtocol).label}
+                                  </p>
+                                </div>
+                                <span className="rounded-full border border-[#74643a] bg-[#201b11] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#f4d77c]">
+                                  {selectedProtocol}
+                                </span>
+                              </div>
+
+                              {selectedProtocol === "SHOPPING" && (
+                                <div className="mt-4 grid gap-3">
+                                  <label
+                                    htmlFor="shopping-weight"
+                                    className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]"
+                                  >
+                                    Package Weight
+                                  </label>
+                                  <select
+                                    id="shopping-weight"
+                                    value={shoppingWeight}
+                                    onChange={(event) =>
+                                      setShoppingWeight(event.target.value as ShoppingWeight)
+                                    }
+                                    className="rounded-xl border border-[#40533f] bg-[#101a13] px-3 py-3 text-sm font-semibold text-[#eef4ec] outline-none focus:border-[#d4b55a]"
+                                  >
+                                    {(Object.keys(SHOPPING_WEIGHT_PRICING) as ShoppingWeight[]).map(
+                                      (weight) => (
+                                        <option key={weight} value={weight}>
+                                          {SHOPPING_WEIGHT_PRICING[weight].label}
+                                        </option>
+                                      ),
+                                    )}
+                                  </select>
+                                  <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="rounded-[18px] border border-[#344834] bg-black/20 p-3">
+                                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
+                                        Amount
+                                      </p>
+                                      <p className="mt-1 text-2xl font-semibold text-[#f4df95]">
+                                        {formatCurrency(shoppingPricing.amount)}
+                                      </p>
+                                    </div>
+                                    <div className="rounded-[18px] border border-[#344834] bg-black/20 p-3">
+                                      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
+                                        Handling Note
+                                      </p>
+                                      <p className="mt-1 text-sm leading-5 text-[#d6dfd6]">
+                                        {shoppingPricing.description}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <label
+                                    htmlFor="supply-items"
+                                    className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]"
+                                  >
+                                    Items Being Procured
+                                  </label>
+                                  <textarea
+                                    id="supply-items"
+                                    value={supplyItems}
+                                    onChange={(event) => setSupplyItems(event.target.value)}
+                                    rows={5}
+                                    className="min-h-32 rounded-xl border border-[#40533f] bg-[#101a13] px-3 py-3 text-sm leading-6 text-[#eef4ec] outline-none focus:border-[#d4b55a]"
+                                  />
+                                </div>
+                              )}
+
+                              {selectedProtocol === "MWR" && (
+                                <div className="mt-4 grid gap-3">
+                                  <div className="rounded-[18px] border border-[#74643a] bg-[#201b11] px-3 py-3">
+                                    <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#f4d77c]">
+                                      Tax Documentation
+                                    </p>
+                                    <p className="mt-1 text-sm leading-6 text-[#eadca7]">
+                                      Section 501(c)(19) language is locked to verification-required
+                                      status until an authorized record is attached.
+                                    </p>
+                                  </div>
+                                  <label
+                                    htmlFor="donation-amount"
+                                    className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]"
+                                  >
+                                    Support Amount
+                                  </label>
+                                  <input
+                                    id="donation-amount"
+                                    type="number"
+                                    min="0"
+                                    step="25"
+                                    value={donationAmount}
+                                    onChange={(event) =>
+                                      setDonationAmount(Math.max(0, Number(event.target.value) || 0))
+                                    }
+                                    className="rounded-xl border border-[#40533f] bg-[#101a13] px-3 py-3 text-sm font-semibold text-[#eef4ec] outline-none focus:border-[#d4b55a]"
+                                  />
+                                  <div className="grid gap-2">
+                                    {DONATION_IMPACT_TIERS.map((tier) => (
+                                      <button
+                                        key={tier.amount}
+                                        type="button"
+                                        onClick={() => setDonationAmount(tier.amount)}
+                                        className={`rounded-xl border px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.08em] transition ${
+                                          donationAmount === tier.amount
+                                            ? "border-[#d6b14f] bg-[#2a2515] text-[#f6dc84]"
+                                            : "border-[#40533f] bg-black/20 text-[#cbd8cc] hover:border-[#627660]"
+                                        }`}
+                                      >
+                                        {formatCurrency(tier.amount)} - {tier.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  <div className="rounded-[18px] border border-[#344834] bg-black/20 p-3">
+                                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
+                                      Impact Label
+                                    </p>
+                                    <p className="mt-1 text-lg font-semibold text-[#f4df95]">
+                                      {donationImpact.label}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="rounded-[20px] border border-[#40533f] bg-[#0d1510] p-4">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
+                                  <Timer className="h-4 w-4" />
+                                  Memo Preview
+                                </p>
+                                <span className="rounded-full border border-[#40533f] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#cfd9d0]">
+                                  4-hour countdown included
+                                </span>
+                              </div>
+                              <pre className="mt-3 max-h-[360px] overflow-auto whitespace-pre-wrap break-words rounded-[18px] border border-[#2f4332] bg-black/30 p-3 text-xs leading-6 text-[#dce6dd]">
+                                {protocolMemo}
+                              </pre>
+                            </div>
+
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <button
+                                type="button"
+                                onClick={() => dispatchProtocolMemo(selectedRequest, "whatsapp")}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0d5f2a] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#127434]"
+                              >
+                                <RadioTower className="h-4 w-4" />
+                                Send WhatsApp
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => dispatchProtocolMemo(selectedRequest, "email")}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#1d4e89] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#2562ac]"
+                              >
+                                <Mail className="h-4 w-4" />
+                                Send Email
+                              </button>
+                            </div>
+
+                            {getSocialEntries(selectedRequest).length > 0 && (
+                              <div className="grid gap-2">
+                                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
+                                  Social Dispatch Paths
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {getSocialEntries(selectedRequest).map((entry) => (
+                                    <button
+                                      key={entry.key}
+                                      type="button"
+                                      onClick={() => dispatchSocialProtocolMemo(entry, selectedRequest)}
+                                      className="inline-flex items-center gap-2 rounded-full border border-[#415540] bg-[#122015] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#dde7de] transition hover:border-[#6f846b]"
+                                    >
+                                      <Send className="h-3.5 w-3.5" />
+                                      {entry.label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <button
+                                type="button"
+                                onClick={() => generateSupplyManifest(selectedRequest)}
+                                disabled={selectedProtocol !== "SHOPPING"}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#596b4d] bg-[#172218] px-4 py-3 text-sm font-semibold text-[#dce6dd] transition hover:bg-[#213021] disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                <Package className="h-4 w-4" />
+                                Supply Manifest PDF
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => generateAppreciationCertificate(selectedRequest)}
+                                disabled={selectedProtocol !== "MWR"}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#596b4d] bg-[#172218] px-4 py-3 text-sm font-semibold text-[#dce6dd] transition hover:bg-[#213021] disabled:cursor-not-allowed disabled:opacity-45"
+                              >
+                                <ShieldCheck className="h-4 w-4" />
+                                Appreciation PDF
+                              </button>
+                            </div>
+
+                            {protocolStatus && (
+                              <p className="rounded-[16px] border border-[#344834] bg-black/20 px-3 py-2 text-xs leading-5 text-[#aebfaf]">
+                                {protocolStatus}
+                              </p>
+                            )}
+                          </div>
+                        </article>
+
                         <article className="rounded-[24px] border border-[#314332] bg-black/20 p-4">
                           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#d6b14f]">
                             Officer Actions
