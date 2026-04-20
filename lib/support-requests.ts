@@ -81,6 +81,8 @@ export interface SupportRequestDocument {
   supply_manifest_items?: string[];
   mwr_donation_amount?: number;
   mwr_impact_label?: string;
+  mwr_certificate_name?: string;
+  mwr_trust_badge?: string;
   tax_documentation_status?: string;
   contact?: RequestContactBundle;
   social_contacts?: RequestSocialContacts;

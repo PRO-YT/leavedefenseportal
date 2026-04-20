@@ -140,6 +140,13 @@ const REQUEST_STEPS = [
   "Evidence & Submit",
 ] as const;
 
+const MWR_TAX_EXEMPT_BADGE = "Section 501(c)(19) Military Organization";
+const MWR_DONATION_TIERS = [
+  { amount: 100, label: "Platoon Internet Access" },
+  { amount: 500, label: "Unit Recreation Event" },
+  { amount: 1000, label: "Deployed Family Support" },
+];
+
 function formatCurrency(value: number | undefined) {
   if (typeof value !== "number") {
     return "-";
@@ -150,6 +157,15 @@ function formatCurrency(value: number | undefined) {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function getMwrImpactLabel(amount: number) {
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
+  const tier = [...MWR_DONATION_TIERS]
+    .sort((left, right) => right.amount - left.amount)
+    .find((entry) => safeAmount >= entry.amount);
+
+  return tier?.label ?? "General Morale Support";
 }
 
 function calculateUrgency(type: ServiceType): "CRITICAL" | "MEDIUM" | "LOW" {
@@ -313,6 +329,8 @@ function DossierPageContent() {
   const [backImageFile, setBackImageFile] = useState<File | null>(null);
   const [frontImagePreview, setFrontImagePreview] = useState("");
   const [backImagePreview, setBackImagePreview] = useState("");
+  const [mwrDonationAmount, setMwrDonationAmount] = useState(100);
+  const [mwrCertificateName, setMwrCertificateName] = useState("");
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -372,6 +390,7 @@ function DossierPageContent() {
   const galleryImages = usingLegacyGalleryBucket ? rawCertificationImages : rawGalleryImages;
   const certificationImages = usingLegacyGalleryBucket ? [] : rawCertificationImages;
   const galleryPreviewImages = galleryImages.slice(0, 3);
+  const mwrImpactLabel = getMwrImpactLabel(mwrDonationAmount);
 
   const intakeSummary = useMemo(() => {
     return [
@@ -431,6 +450,8 @@ function DossierPageContent() {
     setInstagram("");
     setXHandle("");
     setNotes(buildRequestPrefillMessage(serviceType, memberRecord));
+    setMwrDonationAmount(100);
+    setMwrCertificateName("");
     setDocumentType("");
     setDocumentNumber("");
     setFrontImageUrl("");
@@ -730,6 +751,18 @@ function DossierPageContent() {
         front_image_name: frontUploadedName,
         back_image_name: backUploadedName,
       });
+      const mwrCertificateDisplayName =
+        mwrCertificateName.trim() || requesterName.trim() || "Supporter";
+      const mwrSupportFields =
+        selectedServiceDetails.type === "MWR"
+          ? {
+              mwr_donation_amount: mwrDonationAmount,
+              mwr_impact_label: mwrImpactLabel,
+              mwr_certificate_name: mwrCertificateDisplayName,
+              mwr_trust_badge: MWR_TAX_EXEMPT_BADGE,
+              tax_documentation_status: "section_501c19",
+            }
+          : {};
 
       const payload = {
         member_uid: member.id,
@@ -755,6 +788,7 @@ function DossierPageContent() {
         ...(Object.keys(contact).length > 0 ? { contact } : {}),
         ...(Object.keys(socialContacts).length > 0 ? { social_contacts: socialContacts } : {}),
         ...(Object.keys(identification).length > 0 ? { identification } : {}),
+        ...mwrSupportFields,
       };
 
       setModalStatus("Routing request to Firestore command ledger...");
@@ -1370,6 +1404,98 @@ function DossierPageContent() {
                       <li>Operational notes visible to the logistics officer</li>
                     </ul>
                   </article>
+
+                  {selectedServiceDetails.type === "MWR" && (
+                    <article className="rounded-[24px] border border-[#7a6530] bg-[linear-gradient(135deg,rgba(45,36,15,0.74),rgba(12,21,15,0.94))] p-5 lg:col-span-2">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f2d271]">
+                            MWR Support Checkout
+                          </p>
+                          <h4 className="mt-2 font-display text-2xl font-semibold text-[#fff9df]">
+                            Tax-Exempt Appreciation Support
+                          </h4>
+                          <p className="mt-2 max-w-2xl text-sm leading-7 text-[#eadca7]">
+                            Choose the support amount, lock the impact label, and prepare the
+                            Certificate of Appreciation name for immediate officer processing.
+                          </p>
+                        </div>
+                        <span className="inline-flex w-fit items-center gap-2 rounded-full border border-[#d6b14f] bg-[#1f1a0e] px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-[#f5db83]">
+                          <BadgeCheck className="h-4 w-4" />
+                          {MWR_TAX_EXEMPT_BADGE}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+                        <div className="grid gap-3">
+                          {MWR_DONATION_TIERS.map((tier) => (
+                            <button
+                              key={tier.amount}
+                              type="button"
+                              onClick={() => setMwrDonationAmount(tier.amount)}
+                              className={`rounded-2xl border px-4 py-3 text-left transition ${
+                                mwrDonationAmount === tier.amount
+                                  ? "border-[#f0d67f] bg-[#2e2716] text-[#fff3bd]"
+                                  : "border-[#5e5431] bg-black/20 text-[#e0d7b0] hover:border-[#d6b14f]"
+                              }`}
+                            >
+                              <span className="block text-lg font-semibold">
+                                {formatCurrency(tier.amount)}
+                              </span>
+                              <span className="mt-1 block text-sm">{tier.label}</span>
+                            </button>
+                          ))}
+                          <label
+                            htmlFor="mwrCustomAmount"
+                            className="mt-1 block text-xs font-semibold uppercase tracking-[0.08em] text-[#d8c984]"
+                          >
+                            Custom Amount
+                          </label>
+                          <input
+                            id="mwrCustomAmount"
+                            type="number"
+                            min="0"
+                            step="25"
+                            value={mwrDonationAmount}
+                            onChange={(event) =>
+                              setMwrDonationAmount(Math.max(0, Number(event.target.value) || 0))
+                            }
+                            className="w-full rounded-xl border border-[#6b5a2b] bg-[#0d1710] px-3 py-2.5 text-sm font-semibold text-[#fff7d7] outline-none focus:border-[#d4b55a]"
+                          />
+                        </div>
+
+                        <div className="rounded-[22px] border border-[#6b5a2b] bg-black/25 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#d8c984]">
+                            Selected Impact
+                          </p>
+                          <p className="mt-2 text-2xl font-semibold text-[#fff3bd]">
+                            {mwrImpactLabel}
+                          </p>
+                          <p className="mt-3 text-sm leading-7 text-[#eadca7]">
+                            A Certificate of Appreciation will be prepared using the name below
+                            after payment confirmation.
+                          </p>
+                          <label
+                            htmlFor="mwrCertificateName"
+                            className="mt-4 block text-xs font-semibold uppercase tracking-[0.08em] text-[#d8c984]"
+                          >
+                            Certificate Name
+                          </label>
+                          <input
+                            id="mwrCertificateName"
+                            value={mwrCertificateName}
+                            onChange={(event) => setMwrCertificateName(event.target.value)}
+                            placeholder={requesterName || "Name to display on certificate"}
+                            className="mt-2 w-full rounded-xl border border-[#6b5a2b] bg-[#0d1710] px-3 py-2.5 text-sm text-[#fff7d7] outline-none focus:border-[#d4b55a]"
+                          />
+                          <p className="mt-4 rounded-2xl border border-[#7a6530] bg-[#1c170c] px-4 py-3 text-xs leading-6 text-[#eadca7]">
+                            Trust badge: {MWR_TAX_EXEMPT_BADGE}. The selected impact label and
+                            certificate name are included in the secure request packet.
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  )}
                 </section>
               )}
 
@@ -1415,6 +1541,21 @@ function DossierPageContent() {
                           className="w-full rounded-xl border border-[#445744] bg-[#0d1710] px-3 py-2.5 text-sm text-[#eef4ec] outline-none focus:border-[#d4b55a]"
                         />
                       </div>
+                      {selectedServiceDetails.type === "MWR" && (
+                        <div className="rounded-[20px] border border-[#7a6530] bg-[#1c170c] p-4">
+                          <p className="font-semibold text-[#fff3bd]">MWR Support Checkout</p>
+                          <p className="mt-2 text-[#eadca7]">
+                            Badge: {MWR_TAX_EXEMPT_BADGE}
+                          </p>
+                          <p className="mt-1 text-[#eadca7]">
+                            Amount: {formatCurrency(mwrDonationAmount)} / Impact: {mwrImpactLabel}
+                          </p>
+                          <p className="mt-1 text-[#eadca7]">
+                            Certificate name:{" "}
+                            {mwrCertificateName.trim() || requesterName.trim() || "Supporter"}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </article>
 

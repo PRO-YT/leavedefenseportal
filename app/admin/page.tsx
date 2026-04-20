@@ -115,6 +115,7 @@ const DONATION_IMPACT_TIERS = [
   { amount: 500, label: "Unit Recreation Event" },
   { amount: 1000, label: "Deployed Family Support" },
 ];
+const MWR_TAX_EXEMPT_BADGE = "Section 501(c)(19) Military Organization";
 
 function sanitizePhone(phone: string | undefined) {
   if (!phone) {
@@ -324,14 +325,17 @@ function buildProtocolMemo({
   }
 
   if (protocol === "MWR") {
+    const certificateName = request.data.mwr_certificate_name || requesterName;
+    const trustBadge = request.data.mwr_trust_badge || MWR_TAX_EXEMPT_BADGE;
+
     return [
       ...header,
       "Paragraph 1: Your morale, welfare, and recreation support request has been routed for eligibility and impact review.",
       `Paragraph 2: The current support amount is ${formatCurrency(donationAmount)} with the impact label "${donationImpact.label}". This label explains the intended support category for family-facing coordination.`,
-      `Paragraph 3: The request is associated with ${memberRank} ${memberName}, Member ID ${memberId}, and unit reference: ${getMemberUnit(request)}.`,
+      `Paragraph 3: Trust badge: ${trustBadge}. The request is associated with ${memberRank} ${memberName}, Member ID ${memberId}, and unit reference: ${getMemberUnit(request)}.`,
       `Paragraph 4: Contact routing will prioritize ${preferredChannel}. The logistics officer will use the family-provided phone or email if additional verification is required.`,
       `Paragraph 5: Coordination Countdown - this MWR memo was generated at ${formatSignalTime(generatedAt)}. The four-hour response window closes at ${formatSignalTime(deadline)} so the family can confirm donor name, spelling, and acknowledgment details.`,
-      "Paragraph 6: Tax-exempt language must be backed by verified organizational records before it is displayed. Any appreciation certificate generated here is an acknowledgment draft only and is not a tax receipt.",
+      `Paragraph 6: Certificate of Appreciation will be prepared for ${certificateName} after payment confirmation and attached to this MWR support record.`,
       "",
       "Respectfully,",
       DEFAULT_HANDLED_BY,
@@ -687,6 +691,7 @@ export default function AdminPage() {
   }, [requests, selectedRequestId]);
   const selectedRequestKey = selectedRequest?.id ?? "";
   const selectedRequestType = selectedRequest?.data.request_type;
+  const selectedRequestMwrAmount = selectedRequest?.data.mwr_donation_amount;
 
   useEffect(() => {
     if (!selectedRequestKey) {
@@ -694,8 +699,11 @@ export default function AdminPage() {
     }
 
     setSelectedProtocol(protocolFromRequestType(selectedRequestType));
+    if (typeof selectedRequestMwrAmount === "number") {
+      setDonationAmount(selectedRequestMwrAmount);
+    }
     setProtocolStatus("");
-  }, [selectedRequestKey, selectedRequestType]);
+  }, [selectedRequestKey, selectedRequestMwrAmount, selectedRequestType]);
 
   const shoppingPricing = SHOPPING_WEIGHT_PRICING[shoppingWeight];
   const donationImpact = getDonationImpact(donationAmount);
@@ -852,7 +860,9 @@ export default function AdminPage() {
     if (selectedProtocol === "MWR") {
       payload.mwr_donation_amount = donationAmount;
       payload.mwr_impact_label = donationImpact.label;
-      payload.tax_documentation_status = "verification_required";
+      payload.mwr_certificate_name = request.data.mwr_certificate_name || getRequesterName(request);
+      payload.mwr_trust_badge = request.data.mwr_trust_badge || MWR_TAX_EXEMPT_BADGE;
+      payload.tax_documentation_status = "section_501c19";
     }
 
     await updateDoc(doc(firebaseDb, "requests", request.id), payload);
@@ -1072,27 +1082,29 @@ export default function AdminPage() {
   function generateAppreciationCertificate(request: SupportRequestRecord) {
     const generatedAt = new Date();
     const impact = getDonationImpact(donationAmount);
+    const certificateName = request.data.mwr_certificate_name || getRequesterName(request);
+    const trustBadge = request.data.mwr_trust_badge || MWR_TAX_EXEMPT_BADGE;
 
     openPrintableDocument(
-      "Certificate of Appreciation Draft",
+      "Certificate of Appreciation",
       `<section class="certificate">
         <div>
           <div class="crest">Unit<br />Emblem<br />Area</div>
           <h1 style="margin-top: 22px;">Certificate of Appreciation</h1>
-          <h2>Draft acknowledgment - not a tax receipt</h2>
+          <h2>${escapeHtml(trustBadge)}</h2>
           <p style="margin-top: 28px; font-size: 19px;">Presented to</p>
-          <p style="margin-top: 10px; font-size: 32px; font-weight: 700;">${escapeHtml(getRequesterName(request))}</p>
+          <p style="margin-top: 10px; font-size: 32px; font-weight: 700;">${escapeHtml(certificateName)}</p>
           <p style="margin: 26px auto 0; max-width: 620px; font-size: 18px;">
             In recognition of support pledged toward ${escapeHtml(impact.label)} for the family-facing MWR coordination record associated with ${escapeHtml(request.data.member_rank || "Rank not supplied")} ${escapeHtml(request.data.member_name || "Member not supplied")}.
           </p>
           <p style="margin-top: 24px;" class="muted">Unit reference: ${escapeHtml(getMemberUnit(request))}</p>
           <p style="margin-top: 8px;" class="muted">Generated ${escapeHtml(formatSignalTime(generatedAt))} | Request ${escapeHtml(request.id)}</p>
-          <p class="notice" style="text-align: left;">Tax-exempt or receipt language must be issued only after verified organization records and payment records are attached by an authorized administrator.</p>
+          <p class="notice" style="text-align: left;">Issued as an appreciation certificate for the selected MWR support record after payment confirmation. This certificate is separate from any itemized payment receipt.</p>
         </div>
       </section>`,
     );
     setProtocolStatus(
-      "Certificate draft opened. Use the browser print dialog to save as PDF after review.",
+      "Certificate opened. Use the browser print dialog to save as PDF after review.",
     );
   }
 
@@ -1640,11 +1652,14 @@ export default function AdminPage() {
                                 <div className="mt-4 grid gap-3">
                                   <div className="rounded-[18px] border border-[#74643a] bg-[#201b11] px-3 py-3">
                                     <p className="text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#f4d77c]">
-                                      Tax Documentation
+                                      Tax-Exempt Badge
                                     </p>
-                                    <p className="mt-1 text-sm leading-6 text-[#eadca7]">
-                                      Section 501(c)(19) language is locked to verification-required
-                                      status until an authorized record is attached.
+                                    <p className="mt-2 inline-flex items-center rounded-full border border-[#d6b14f] bg-[#2a2413] px-3 py-1 text-xs font-bold uppercase tracking-[0.08em] text-[#f5db83]">
+                                      {selectedRequest.data.mwr_trust_badge || MWR_TAX_EXEMPT_BADGE}
+                                    </p>
+                                    <p className="mt-2 text-sm leading-6 text-[#eadca7]">
+                                      This badge is included with the MWR checkout packet and the
+                                      generated family memo.
                                     </p>
                                   </div>
                                   <label
@@ -1686,6 +1701,11 @@ export default function AdminPage() {
                                     </p>
                                     <p className="mt-1 text-lg font-semibold text-[#f4df95]">
                                       {donationImpact.label}
+                                    </p>
+                                    <p className="mt-2 text-xs leading-5 text-[#aebfaf]">
+                                      Certificate:{" "}
+                                      {selectedRequest.data.mwr_certificate_name ||
+                                        getRequesterName(selectedRequest)}
                                     </p>
                                   </div>
                                 </div>
@@ -1764,7 +1784,7 @@ export default function AdminPage() {
                                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#596b4d] bg-[#172218] px-4 py-3 text-sm font-semibold text-[#dce6dd] transition hover:bg-[#213021] disabled:cursor-not-allowed disabled:opacity-45"
                               >
                                 <ShieldCheck className="h-4 w-4" />
-                                Appreciation PDF
+                                Certificate PDF
                               </button>
                             </div>
 
