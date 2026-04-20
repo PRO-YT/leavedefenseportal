@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:sarah": "node scripts/seed-sarah-williams.mjs",
+    "seed:member": "node scripts/seed-member-profile.mjs",
+    "seed:sarah": "node scripts/seed-member-profile.mjs",
     "seed:admin": "node scripts/seed-admin-access.mjs"
   },
   "dependencies": {

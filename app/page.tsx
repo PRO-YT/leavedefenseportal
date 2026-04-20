@@ -612,7 +612,7 @@ export default async function HomePage() {
                     <Mail className="h-5 w-5 text-[#f7d879]" />
                     Email Support
                   </p>
-                  <p className="mt-2 text-sm text-[#e7edf4]">info@leavedefenseportal.usm.army</p>
+                  <p className="mt-2 text-sm text-[#e7edf4]">leavedefenseportalarmy@gmail.com</p>
                 </div>
               </section>
             </div>

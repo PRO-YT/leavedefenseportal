@@ -61,6 +61,7 @@ interface MemberDocument {
   gallery_state?: {
     official_portrait_url?: string;
     tactical_photo_url?: string;
+    gallery_images?: string[];
     certification_scans?: string[];
   };
   service_record?: {
@@ -97,14 +98,40 @@ interface MemberRecord {
   data: MemberDocument;
 }
 
-const CERT_PLACEHOLDERS = [
-  "https://placehold.co/640x360/f8fafc/1f2937?text=Combat+Medic+Certification",
-  "https://placehold.co/640x360/f8fafc/1f2937?text=Paratrooper+Wings+Scan",
-];
+function createInlinePlaceholder(
+  label: string,
+  width: number,
+  height: number,
+  background: string,
+  foreground: string,
+) {
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" fill="none">
+      <rect width="${width}" height="${height}" rx="28" fill="${background}" />
+      <rect x="24" y="24" width="${width - 48}" height="${height - 48}" rx="22" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.12)" />
+      <text x="50%" y="50%" fill="${foreground}" font-family="Arial, sans-serif" font-size="28" text-anchor="middle" dominant-baseline="middle">
+        ${label}
+      </text>
+    </svg>
+  `;
 
-const OFFICIAL_PLACEHOLDER =
-  "https://placehold.co/640x420/111827/e5e7eb?text=Official+Portrait";
-const FIELD_PLACEHOLDER = "https://placehold.co/640x420/111827/e5e7eb?text=Tactical+Field+Photo";
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+const OFFICIAL_PLACEHOLDER = createInlinePlaceholder(
+  "Official Portrait",
+  640,
+  420,
+  "#111827",
+  "#e5e7eb",
+);
+const FIELD_PLACEHOLDER = createInlinePlaceholder(
+  "Tactical Field Photo",
+  640,
+  420,
+  "#111827",
+  "#e5e7eb",
+);
 
 const REQUEST_STEPS = [
   "Mission Brief",
@@ -133,6 +160,70 @@ function calculateUrgency(type: ServiceType): "CRITICAL" | "MEDIUM" | "LOW" {
     return "MEDIUM";
   }
   return "LOW";
+}
+
+function normalizeImageUrl(value: string | undefined) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (/^(?:https?:)?\/\//i.test(trimmed) || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+    return trimmed;
+  }
+
+  const normalizedPath = trimmed
+    .replace(/\\/g, "/")
+    .replace(/^public(?=\/)/i, "")
+    .replace(/^\.\//, "");
+  const absolutePath = normalizedPath.startsWith("/") ? normalizedPath : `/${normalizedPath}`;
+
+  return encodeURI(absolutePath);
+}
+
+function collectImageUrls(values: string[] | undefined) {
+  const uniqueUrls = new Set<string>();
+
+  for (const value of values ?? []) {
+    const normalized = normalizeImageUrl(value);
+    if (normalized) {
+      uniqueUrls.add(normalized);
+    }
+  }
+
+  return [...uniqueUrls];
+}
+
+function normalizeServiceNumber(value: string | undefined) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value.trim().replace(/^[^A-Za-z0-9]+/, "").replace(/\s+/g, "").toUpperCase();
+}
+
+function buildRequestPrefillMessage(serviceType: ServiceType, memberRecord: MemberRecord) {
+  const service = SERVICE_OPTIONS.find((option) => option.type === serviceType);
+  const memberName = memberRecord.data.full_name ?? memberRecord.id;
+  const memberId = normalizeServiceNumber(memberRecord.data.service_number) || memberRecord.id;
+  const rank = memberRecord.data.rank ?? "Unknown Rank";
+  const unit = memberRecord.data.unit ?? "Unit Not Listed";
+
+  return [
+    "Command Support Intake Brief",
+    `Service Lane: ${service?.label ?? serviceType}`,
+    `Member: ${memberName}`,
+    `Member ID: ${memberId}`,
+    `Rank / Unit: ${rank} / ${unit}`,
+    "",
+    service?.prefillTemplate ?? "Support Summary\n- Requested assistance:",
+    "",
+    `Officer Contact Protocol: ${service?.contactGuidance ?? "Use the selected preferred channel for all logistics follow-up."}`,
+  ].join("\n");
 }
 
 function toMissionDisplay(value: string | MissionTourObject) {
@@ -263,9 +354,24 @@ function DossierPageContent() {
 
   const missionGeography = member?.data.mission_geography ?? [];
   const medicalRecords = member?.data.medical_ledger?.records ?? [];
-  const certificationScans = member?.data.gallery_state?.certification_scans;
-  const certificationImages =
-    certificationScans && certificationScans.length > 0 ? certificationScans : CERT_PLACEHOLDERS;
+  const officialPortraitUrl =
+    normalizeImageUrl(member?.data.gallery_state?.official_portrait_url) ?? OFFICIAL_PLACEHOLDER;
+  const tacticalPhotoUrl =
+    normalizeImageUrl(member?.data.gallery_state?.tactical_photo_url) ?? FIELD_PLACEHOLDER;
+  const rawGalleryImages = useMemo(
+    () => collectImageUrls(member?.data.gallery_state?.gallery_images),
+    [member],
+  );
+  const rawCertificationImages = useMemo(
+    () => collectImageUrls(member?.data.gallery_state?.certification_scans),
+    [member],
+  );
+  const displayServiceNumber = normalizeServiceNumber(member?.data.service_number) || member?.id || "";
+  const hasExplicitGallery = Array.isArray(member?.data.gallery_state?.gallery_images);
+  const usingLegacyGalleryBucket = !hasExplicitGallery && rawCertificationImages.length > 0;
+  const galleryImages = usingLegacyGalleryBucket ? rawCertificationImages : rawGalleryImages;
+  const certificationImages = usingLegacyGalleryBucket ? [] : rawCertificationImages;
+  const galleryPreviewImages = galleryImages.slice(0, 3);
 
   const intakeSummary = useMemo(() => {
     return [
@@ -295,7 +401,13 @@ function DossierPageContent() {
     xHandle,
   ]);
 
-  const resetIntakeState = useCallback((memberRecord: MemberRecord) => {
+  const resetIntakeState = useCallback((serviceType: ServiceType, memberRecord: MemberRecord) => {
+    const defaultPreferredChannel = memberRecord.data.phone?.trim()
+      ? "Primary Phone"
+      : memberRecord.data.email?.trim()
+        ? "Primary Email"
+        : "Primary Phone";
+
     setModalStep(1);
     setModalStatus("");
     setRequesterName("");
@@ -311,14 +423,14 @@ function DossierPageContent() {
     setAlternatePhone("");
     setPrimaryEmail(memberRecord.data.email ?? "");
     setAlternateEmail("");
-    setPreferredChannel("Primary Phone");
+    setPreferredChannel(defaultPreferredChannel);
     setWhatsapp("");
     setTelegram("");
     setSignalHandle("");
     setFacebook("");
     setInstagram("");
     setXHandle("");
-    setNotes("");
+    setNotes(buildRequestPrefillMessage(serviceType, memberRecord));
     setDocumentType("");
     setDocumentNumber("");
     setFrontImageUrl("");
@@ -338,7 +450,7 @@ function DossierPageContent() {
   const prepareModal = useCallback((serviceType: ServiceType, memberRecord: MemberRecord) => {
     setSelectedService(serviceType);
     setModalOpen(true);
-    resetIntakeState(memberRecord);
+    resetIntakeState(serviceType, memberRecord);
   }, [resetIntakeState]);
 
   const runSearchWithTerm = useCallback(
@@ -349,6 +461,7 @@ function DossierPageContent() {
       }
 
       const term = rawTerm.trim();
+      const normalizedServiceTerm = normalizeServiceNumber(term);
       if (!term) {
         setSearchStatus("Enter a service number or member email.");
         return;
@@ -360,9 +473,24 @@ function DossierPageContent() {
 
       try {
         const membersRef = collection(firebaseDb, "members");
-        let snapshot = await getDocs(query(membersRef, where("service_number", "==", term), limit(1)));
+        let snapshot = null;
+        const serviceCandidates = [
+          normalizedServiceTerm,
+          term,
+          normalizedServiceTerm ? `;${normalizedServiceTerm}` : "",
+        ].filter((value, index, collection) => value && collection.indexOf(value) === index);
 
-        if (snapshot.empty) {
+        for (const candidate of serviceCandidates) {
+          const attempt = await getDocs(
+            query(membersRef, where("service_number", "==", candidate), limit(1)),
+          );
+          if (!attempt.empty) {
+            snapshot = attempt;
+            break;
+          }
+        }
+
+        if (!snapshot || snapshot.empty) {
           snapshot = await getDocs(query(membersRef, where("email", "==", term), limit(1)));
         }
 
@@ -775,7 +903,7 @@ function DossierPageContent() {
                     Official Portrait
                   </p>
                   <img
-                    src={member.data.gallery_state?.official_portrait_url ?? OFFICIAL_PLACEHOLDER}
+                    src={officialPortraitUrl}
                     alt="Official portrait"
                     className="h-72 w-full rounded-[20px] object-cover"
                   />
@@ -794,7 +922,7 @@ function DossierPageContent() {
                     <p>
                       <span className="text-[#97ac97]">Service Number</span>
                       <br />
-                      <span className="font-semibold">{member.data.service_number ?? member.id}</span>
+                      <span className="font-semibold">{displayServiceNumber}</span>
                     </p>
                     <p>
                       <span className="text-[#97ac97]">Unit</span>
@@ -814,6 +942,11 @@ function DossierPageContent() {
                       <br />
                       <span className="font-semibold">{member.data.email ?? "-"}</span>
                     </p>
+                    <p>
+                      <span className="text-[#97ac97]">Contact Number</span>
+                      <br />
+                      <span className="font-semibold">{member.data.phone ?? "-"}</span>
+                    </p>
                   </div>
                 </article>
 
@@ -822,10 +955,43 @@ function DossierPageContent() {
                     Tactical / Field Photo
                   </p>
                   <img
-                    src={member.data.gallery_state?.tactical_photo_url ?? FIELD_PLACEHOLDER}
+                    src={tacticalPhotoUrl}
                     alt="Field photo"
                     className="h-48 w-full rounded-[20px] object-cover"
                   />
+                </article>
+
+                <article className="rounded-[24px] border border-[#364834] bg-black/20 p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#9cb499]">
+                      Mission Gallery
+                    </p>
+                    <span className="rounded-full border border-[#4c604b] bg-[#152016] px-3 py-1 text-[0.68rem] font-bold uppercase tracking-[0.1em] text-[#d7e5d8]">
+                      {galleryImages.length} On File
+                    </span>
+                  </div>
+                  {galleryPreviewImages.length > 0 ? (
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                      {galleryPreviewImages.map((url, index) => (
+                        <img
+                          key={`${url}-preview-${index}`}
+                          src={url}
+                          alt={`Gallery preview ${index + 1}`}
+                          className="h-20 w-full rounded-[16px] border border-[#364834] bg-[#0d1510] object-cover"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-4 rounded-[18px] border border-dashed border-[#415340] bg-[#0d1510] px-3 py-6 text-center text-xs text-[#9fb39f]">
+                      No gallery previews are attached to this dossier yet.
+                    </div>
+                  )}
+                  {usingLegacyGalleryBucket && (
+                    <p className="mt-3 text-[0.72rem] leading-5 text-[#9fb39f]">
+                      Legacy record detected. Gallery media has been recovered from the prior
+                      attachment bucket for display.
+                    </p>
+                  )}
                 </article>
               </div>
             </aside>
@@ -1016,21 +1182,84 @@ function DossierPageContent() {
                 </div>
               </section>
 
-              <section className="soft-outline overflow-hidden rounded-[28px] border border-[#334631] bg-[linear-gradient(180deg,rgba(12,21,14,0.98),rgba(16,28,20,0.96))] px-5 py-5 sm:px-6">
-                <p className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
-                  <FileImage className="h-4 w-4" />
-                  Certification Scans
-                </p>
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                  {certificationImages.map((url) => (
-                    <img
-                      key={url}
-                      src={url}
-                      alt="Certification scan"
-                      className="h-36 w-full rounded-[22px] border border-[#364834] bg-[#0d1510] object-cover"
-                    />
-                  ))}
+              <section className="soft-outline overflow-hidden rounded-[28px] border border-[#334631] bg-[linear-gradient(180deg,rgba(12,21,14,0.98),rgba(16,28,20,0.96))]">
+                <div className="border-b border-[#314332] px-5 py-4 sm:px-6">
+                  <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
+                    <FileImage className="h-4 w-4" />
+                    Service Gallery
+                  </p>
+                  <p className="mt-2 max-w-3xl text-sm leading-7 text-[#aebfaf]">
+                    Verified reference images associated with the member profile and family-facing
+                    dossier review.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-[0.08em] text-[#9cb499]">
+                    <span>{galleryImages.length} image{galleryImages.length === 1 ? "" : "s"} on file</span>
+                    {usingLegacyGalleryBucket && (
+                      <span className="rounded-full border border-[#4b5f49] bg-[#142016] px-3 py-1 text-[0.68rem] text-[#dfe8de]">
+                        Legacy attachment recovery enabled
+                      </span>
+                    )}
+                  </div>
                 </div>
+                {galleryImages.length > 0 ? (
+                  <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6 xl:grid-cols-4">
+                    {galleryImages.map((url, index) => {
+                      const featured = index === 0;
+
+                      return (
+                        <figure
+                          key={`${url}-${index}`}
+                          className={featured ? "sm:col-span-2 xl:col-span-2 xl:row-span-2" : ""}
+                        >
+                          <img
+                            src={url}
+                            alt={`Gallery image ${index + 1}`}
+                            className={`w-full rounded-[22px] border border-[#364834] bg-[#0d1510] object-cover ${
+                              featured ? "h-full min-h-[19rem]" : "h-40"
+                            }`}
+                          />
+                        </figure>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="px-5 py-5 sm:px-6">
+                    <div className="rounded-[22px] border border-dashed border-[#415340] bg-[#0d1510] px-4 py-10 text-center text-sm text-[#9fb39f]">
+                      No gallery images are currently attached to this dossier.
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              <section className="soft-outline overflow-hidden rounded-[28px] border border-[#334631] bg-[linear-gradient(180deg,rgba(12,21,14,0.98),rgba(16,28,20,0.96))]">
+                <div className="border-b border-[#314332] px-5 py-4 sm:px-6">
+                  <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
+                    <BadgeCheck className="h-4 w-4" />
+                    Certification Scans
+                  </p>
+                  <p className="mt-2 max-w-3xl text-sm leading-7 text-[#aebfaf]">
+                    Training cards, qualification documents, and other supporting certification
+                    evidence tied to the personnel record.
+                  </p>
+                </div>
+                {certificationImages.length > 0 ? (
+                  <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6 xl:grid-cols-3">
+                    {certificationImages.map((url, index) => (
+                      <img
+                        key={`${url}-${index}`}
+                        src={url}
+                        alt={`Certification scan ${index + 1}`}
+                        className="h-40 w-full rounded-[22px] border border-[#364834] bg-[#0d1510] object-cover"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-5 py-5 sm:px-6">
+                    <div className="rounded-[22px] border border-dashed border-[#415340] bg-[#0d1510] px-4 py-10 text-center text-sm text-[#9fb39f]">
+                      No certification scans are currently on file for this member.
+                    </div>
+                  </div>
+                )}
               </section>
             </div>
           </section>
@@ -1105,7 +1334,7 @@ function DossierPageContent() {
                       <p>
                         <span className="text-[#95ad95]">Member ID</span>
                         <br />
-                        {member.data.service_number ?? member.id}
+                        {displayServiceNumber}
                       </p>
                       <p>
                         <span className="text-[#95ad95]">Urgency Band</span>
@@ -1132,6 +1361,7 @@ function DossierPageContent() {
                       <li>Requester identity and relationship to the service member</li>
                       <li>Home address and current location for follow-up routing</li>
                       <li>Primary, alternate, and social contact channels</li>
+                      <li>Service-specific coordination brief prefilled for logistics review</li>
                       <li>Optional government ID details and image evidence</li>
                       <li>Operational notes visible to the logistics officer</li>
                     </ul>
@@ -1285,6 +1515,9 @@ function DossierPageContent() {
                           <option>Facebook</option>
                           <option>X</option>
                         </select>
+                        <p className="mt-2 text-xs leading-6 text-[#9fb39f]">
+                          {selectedServiceDetails?.contactGuidance}
+                        </p>
                       </div>
                     </div>
                   </article>
@@ -1334,14 +1567,18 @@ function DossierPageContent() {
 
                     <div className="mt-4">
                       <label htmlFor="requestNotes" className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-[#9cb499]">
-                        Operational Notes
+                        Operational Notes / Coordination Brief
                       </label>
+                      <p className="mb-2 text-xs leading-6 text-[#9fb39f]">
+                        A detailed draft has been prefilled for this request lane. Edit any section
+                        as needed before submission.
+                      </p>
                       <textarea
                         id="requestNotes"
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
-                        placeholder="Explain urgency, travel dates, delivery needs, or other support context."
-                        className="h-32 w-full rounded-xl border border-[#445744] bg-[#0d1710] px-3 py-2.5 text-sm text-[#eef4ec] outline-none focus:border-[#d4b55a]"
+                        placeholder="Provide the most complete logistics context available for review."
+                        className="min-h-[18rem] w-full rounded-xl border border-[#445744] bg-[#0d1710] px-3 py-2.5 text-sm text-[#eef4ec] outline-none focus:border-[#d4b55a]"
                       />
                     </div>
                   </article>
