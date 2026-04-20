@@ -57,7 +57,7 @@ Before production launch, tighten Firebase security rules in:
 - Storage rules
 - App Check
 
-Before running the Sarah Williams seed, create a Cloud Firestore database for project `military-e0207` if you have not already:
+Before running the member seed, create a Cloud Firestore database for project `military-e0207` if you have not already:
 
 - https://console.cloud.google.com/datastore/setup?project=military-e0207
 
@@ -68,24 +68,34 @@ Before running the Sarah Williams seed, create a Cloud Firestore database for pr
 - `requests`
   - Stores support pipeline items with metadata (`member_uid`, `request_timestamp`, `status`, `urgency_level`).
 
-## Seed test member (Sarah Williams)
+## Seed member profile
 
 Seed command:
 
 ```bash
-npm run seed:sarah
+npm run seed:member
 ```
 
 Seed target:
 
 - Collection: `members`
-- Document ID: `member_usm_sw_2011_8824`
-- Searchable Member ID: `USM-SW-2011-8824`
+- Document ID comes from `document_id` inside the JSON file
+- Searchable Member ID comes from `service_number` inside the JSON file
 
 Seed data source:
 
-- `scripts/seed-sarah-williams.mjs`
-- `scripts/seed-data/sarah-williams.member.json`
+- `scripts/seed-member-profile.mjs`
+- `scripts/seed-data/member-profile.json`
+
+To change the seeded member later, edit only:
+
+- `scripts/seed-data/member-profile.json`
+
+Then rerun:
+
+```bash
+npm run seed:member
+```
 
 If seeding fails with Firestore API disabled, enable:
 
