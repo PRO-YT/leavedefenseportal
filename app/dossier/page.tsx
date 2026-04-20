@@ -861,18 +861,18 @@ function DossierPageContent() {
                   </p>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                 <input
                   value={searchInput}
                   onChange={(event) => setSearchInput(event.target.value)}
                   placeholder="Service number or verified email"
-                  className="min-w-[260px] flex-1 rounded-xl border border-[#445744] bg-[#0d1710] px-4 py-3 text-sm text-[#eef4ec] outline-none transition focus:border-[#d4b55a]"
+                  className="min-w-0 flex-1 rounded-xl border border-[#445744] bg-[#0d1710] px-4 py-3 text-sm text-[#eef4ec] outline-none transition focus:border-[#d4b55a]"
                 />
                 <button
                   type="button"
                   disabled={searchBusy}
                   onClick={runSearch}
-                  className="rounded-xl bg-[#d4b55a] px-5 py-3 text-sm font-semibold text-[#16200d] transition hover:bg-[#e2c46b] disabled:opacity-60"
+                  className="w-full rounded-xl bg-[#d4b55a] px-5 py-3 text-sm font-semibold text-[#16200d] transition hover:bg-[#e2c46b] disabled:opacity-60 sm:w-auto"
                 >
                   {searchBusy ? "Searching..." : "Open Dossier"}
                 </button>
@@ -971,7 +971,7 @@ function DossierPageContent() {
                     </span>
                   </div>
                   {galleryPreviewImages.length > 0 ? (
-                    <div className="mt-4 grid grid-cols-3 gap-2">
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {galleryPreviewImages.map((url, index) => (
                         <img
                           key={`${url}-preview-${index}`}
@@ -1267,12 +1267,12 @@ function DossierPageContent() {
       </div>
 
       {modalOpen && selectedServiceDetails && member && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-          <div className="soft-outline w-full max-w-5xl overflow-hidden rounded-[30px] border border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)]">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 sm:flex sm:items-center sm:justify-center sm:p-4">
+          <div className="soft-outline min-h-dvh w-full overflow-hidden rounded-none border-y border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)] sm:min-h-0 sm:max-w-5xl sm:rounded-[30px] sm:border">
             <div className="border-b border-[#334631] bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_14px,#0f160f_14px,#0f160f_28px)] px-5 py-2 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#11170f] sm:px-6">
               Confidential Support Intake Packet
             </div>
-            <div className="flex items-start justify-between gap-3 px-5 py-5 sm:px-6">
+            <div className="flex flex-col items-start gap-4 px-5 py-5 sm:flex-row sm:justify-between sm:px-6">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#97b296]">
                   Request Lane
@@ -1287,7 +1287,7 @@ function DossierPageContent() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-[#445744] bg-white/5 transition hover:bg-white/10"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#445744] bg-white/5 transition hover:bg-white/10"
                 aria-label="Close request modal"
               >
                 <X className="h-4 w-4" />
@@ -1320,7 +1320,7 @@ function DossierPageContent() {
               })}
             </div>
 
-            <div className="max-h-[70dvh] overflow-y-auto px-5 py-5 sm:px-6">
+            <div className="max-h-[calc(100dvh-13rem)] overflow-y-auto px-5 py-5 sm:max-h-[70dvh] sm:px-6">
               {modalStep === 1 && (
                 <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
                   <article className="rounded-[24px] border border-[#364834] bg-black/20 p-5">
@@ -1349,7 +1349,7 @@ function DossierPageContent() {
                       <p>
                         <span className="text-[#95ad95]">Response Channel</span>
                         <br />
-                        Routed to secure Firestore request ledger
+                        Routed to secure logistics officer
                       </p>
                     </div>
                   </article>
@@ -1714,7 +1714,7 @@ function DossierPageContent() {
 
               {modalStatus && (
                 <p
-                  className={`mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-3 text-sm ${
+                  className={`mt-5 flex items-center gap-2 rounded-xl px-4 py-3 text-sm ${
                     modalStatus.toLowerCase().includes("failed")
                       ? "bg-red-950/50 text-red-200"
                       : "bg-emerald-950/50 text-emerald-200"
@@ -1730,23 +1730,23 @@ function DossierPageContent() {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#334631] px-5 py-5 sm:px-6">
+            <div className="flex flex-col gap-3 border-t border-[#334631] px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <button
                 type="button"
                 onClick={() => {
                   setModalStatus("");
                   setModalStep((previous) => Math.max(1, previous - 1));
                 }}
-                className="rounded-xl border border-[#445744] px-4 py-2.5 text-sm font-semibold text-[#dbe5da] transition hover:bg-white/5"
+                className="w-full rounded-xl border border-[#445744] px-4 py-2.5 text-sm font-semibold text-[#dbe5da] transition hover:bg-white/5 sm:w-auto"
                 disabled={modalStep === 1}
               >
                 Back
               </button>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="rounded-xl border border-[#445744] px-4 py-2.5 text-sm font-semibold text-[#dbe5da] transition hover:bg-white/5"
+                  className="w-full rounded-xl border border-[#445744] px-4 py-2.5 text-sm font-semibold text-[#dbe5da] transition hover:bg-white/5 sm:w-auto"
                 >
                   Cancel
                 </button>
@@ -1754,7 +1754,7 @@ function DossierPageContent() {
                   <button
                     type="button"
                     onClick={goToNextStep}
-                    className="rounded-xl bg-[#d4b55a] px-4 py-2.5 text-sm font-semibold text-[#16200d] transition hover:bg-[#e2c46b]"
+                    className="w-full rounded-xl bg-[#d4b55a] px-4 py-2.5 text-sm font-semibold text-[#16200d] transition hover:bg-[#e2c46b] sm:w-auto"
                   >
                     Continue
                   </button>
@@ -1763,7 +1763,7 @@ function DossierPageContent() {
                     type="button"
                     onClick={submitRequest}
                     disabled={submitting}
-                    className="rounded-xl bg-[#2d7a40] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#36934e] disabled:opacity-60"
+                    className="w-full rounded-xl bg-[#2d7a40] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#36934e] disabled:opacity-60 sm:w-auto"
                   >
                     {submitting ? "Submitting..." : "Submit Request Packet"}
                   </button>

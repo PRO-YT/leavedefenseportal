@@ -273,12 +273,12 @@ export function LanguageDock() {
         className="pointer-events-none absolute -left-[9999px] -top-[9999px] h-0 w-0 overflow-hidden opacity-0"
         aria-hidden="true"
       />
-      <div className="fixed bottom-5 left-5 z-50">
+      <div className="fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:bottom-5 sm:left-5">
         {isCollapsed ? (
           <button
             type="button"
             onClick={() => setIsCollapsed(false)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d6dce4] bg-white/95 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[#1a2f4d] shadow-xl backdrop-blur transition hover:bg-white"
+            className="inline-flex w-full items-center justify-between gap-2 rounded-xl border border-[#d6dce4] bg-white/95 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[#1a2f4d] shadow-xl backdrop-blur transition hover:bg-white sm:w-auto sm:justify-start"
             aria-label="Expand language dock"
           >
             <Languages className="h-4 w-4" />

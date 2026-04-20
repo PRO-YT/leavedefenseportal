@@ -118,7 +118,7 @@ export default async function HomePage() {
           id="home"
           className="flex min-h-[100dvh] w-full flex-col overflow-hidden border border-white/10 border-x-0 border-t-0 bg-[linear-gradient(120deg,#253220_0%,#5e6954_100%)]"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#d9dee5] bg-white px-5 py-3 text-sm text-[#1a2b4c] sm:px-7">
+          <div className="flex flex-col items-start gap-3 border-b border-[#d9dee5] bg-white px-4 py-3 text-sm text-[#1a2b4c] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-7">
             <div className="flex items-center gap-2 font-semibold">
               <span className="rounded-md bg-[#13a84d] px-2 py-1 text-[0.72rem] font-bold tracking-[0.08em] text-white">
                 SECURE
@@ -138,9 +138,9 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <div className="flex-1 px-5 py-7 sm:px-7">
+          <div className="flex-1 px-4 py-6 sm:px-7 sm:py-7">
             <div className="grid gap-5 border-b border-white/25 pb-6 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                 <div className="relative h-16 w-16 overflow-hidden rounded-full border border-[#ffde8a]/40 bg-[#0d2a6f]">
                   <Image
                     src="/images/dod-seal.png"
@@ -151,7 +151,7 @@ export default async function HomePage() {
                   />
                 </div>
                 <div>
-                  <h1 className="font-display text-3xl font-semibold leading-none text-white sm:text-4xl lg:text-5xl">
+                  <h1 className="font-display text-[2rem] font-semibold leading-tight text-white sm:text-4xl sm:leading-none lg:text-5xl">
                     USA Defense Military Leave Portal
                   </h1>
                   <p className="mt-2 text-base italic text-[#f4e6be] sm:text-lg">
@@ -159,7 +159,7 @@ export default async function HomePage() {
                   </p>
                 </div>
               </div>
-              <div className="rounded-2xl border border-white/20 bg-black/15 px-5 py-4 text-right">
+              <div className="rounded-2xl border border-white/20 bg-black/15 px-5 py-4 text-left sm:text-right">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#f4e6be]">
                   Authorized Assistance
                 </p>
@@ -169,12 +169,12 @@ export default async function HomePage() {
               </div>
             </div>
 
-            <nav className="mt-5 flex flex-wrap items-center gap-2" aria-label="Primary">
+            <nav className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center" aria-label="Primary">
               {navLinks.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="inline-flex items-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/10"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-semibold text-white transition hover:border-white/20 hover:bg-white/10 sm:w-auto sm:justify-start"
                 >
                   <item.icon className="h-4 w-4 text-[#f8dc8a]" />
                   {item.label}
@@ -186,15 +186,15 @@ export default async function HomePage() {
               <HeroBackgroundSlider
                 slides={HERO_SLIDES}
                 intervalMs={3000}
-                className="h-[62dvh] min-h-[480px] w-full"
+                className="h-[68dvh] min-h-[380px] w-full sm:min-h-[480px]"
               />
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,17,11,0.08)_0%,rgba(9,17,11,0.64)_48%,rgba(9,17,11,0.78)_100%)]" />
-              <div className="absolute inset-0 flex items-center justify-center px-6 text-center">
+              <div className="absolute inset-0 flex items-center justify-center px-4 text-center sm:px-6">
                 <div className="max-w-4xl">
                   <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#f4e6be]">
                     Official U.S. Military Service
                   </p>
-                  <h2 className="mt-4 font-display text-3xl font-semibold leading-[0.95] text-white sm:text-5xl lg:text-7xl">
+                  <h2 className="mt-4 font-display text-[2.2rem] font-semibold leading-[0.95] text-white sm:text-5xl lg:text-7xl">
                     Supporting Our Heroes
                     <br />
                     & Their Families
@@ -206,14 +206,14 @@ export default async function HomePage() {
                   <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                     <Link
                       href="/dossier?service=FLIGHT"
-                      className="inline-flex items-center gap-2 rounded-full bg-[#edc619] px-7 py-3 text-base font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:text-lg"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#edc619] px-7 py-3 text-base font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:w-auto sm:text-lg"
                     >
                       <ListChecks className="h-5 w-5" />
                       Apply for Leave
                     </Link>
                     <Link
                       href="/dossier"
-                      className="inline-flex items-center gap-2 rounded-full border border-white bg-white/10 px-7 py-3 text-base font-semibold text-white transition hover:bg-white/20 sm:text-lg"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white bg-white/10 px-7 py-3 text-base font-semibold text-white transition hover:bg-white/20 sm:w-auto sm:text-lg"
                     >
                       <CircleHelp className="h-5 w-5" />
                       Learn More
@@ -225,7 +225,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <div className="space-y-20 border border-[#d2d7dd] border-x-0 border-b-0 bg-[#eceef1] px-5 py-12 text-[#12284b] sm:px-8 lg:px-12 lg:py-16">
+        <div className="space-y-14 border border-[#d2d7dd] border-x-0 border-b-0 bg-[#eceef1] px-4 py-10 text-[#12284b] sm:px-8 sm:py-12 lg:px-12 lg:py-16 lg:space-y-20">
           <section>
             <h2 className="text-center font-display text-3xl font-semibold leading-none sm:text-4xl lg:text-5xl">
               Featured Video
@@ -257,7 +257,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href="/news"
-                className="inline-flex items-center gap-2 rounded-full bg-[#edc619] px-7 py-3 text-sm font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:text-base"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#edc619] px-7 py-3 text-sm font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:w-auto sm:text-base"
               >
                 <ListChecks className="h-5 w-5" />
                 View All Updates
@@ -265,7 +265,7 @@ export default async function HomePage() {
             </div>
 
             {homepageNews.length > 0 ? (
-              <div className="mt-8 grid items-stretch gap-6 lg:grid-cols-3">
+              <div className="mt-8 grid items-stretch gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {homepageNews.map((news) => (
                   <article
                     key={news.id}
@@ -463,7 +463,7 @@ export default async function HomePage() {
               {supportCards.map((card) => (
                 <article
                   key={card.id}
-                  className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-[1.1rem] border border-[#cfd5de] bg-white shadow-sm"
+                    className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-[1.1rem] border border-[#cfd5de] bg-white shadow-sm sm:min-h-[360px]"
                 >
                   <Image
                     src={card.image}
@@ -481,7 +481,7 @@ export default async function HomePage() {
                     </p>
                     <Link
                       href={card.supportPath}
-                      className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl border border-[#59714b] px-4 py-2 text-xs font-bold text-[#24421d] transition hover:bg-[#edf4e6] sm:text-sm"
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#59714b] px-4 py-2 text-xs font-bold text-[#24421d] transition hover:bg-[#edf4e6] sm:text-sm"
                     >
                       <card.icon className="h-4 w-4" />
                       {card.cta}
@@ -534,14 +534,14 @@ export default async function HomePage() {
               <div className="mt-7 flex flex-wrap items-center justify-center gap-4">
                 <Link
                   href="/dossier?service=FLIGHT"
-                  className="inline-flex items-center gap-2 rounded-full bg-[#edc619] px-7 py-3 text-base font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:text-lg"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#edc619] px-7 py-3 text-base font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:w-auto sm:text-lg"
                 >
                   <ListChecks className="h-5 w-5" />
                   Apply for Leave
                 </Link>
                 <Link
                   href="/dossier"
-                  className="inline-flex items-center gap-2 rounded-full border border-white bg-white/10 px-7 py-3 text-base font-semibold transition hover:bg-white/20 sm:text-lg"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white bg-white/10 px-7 py-3 text-base font-semibold transition hover:bg-white/20 sm:w-auto sm:text-lg"
                 >
                   <Headphones className="h-5 w-5" />
                   Get Support
@@ -550,7 +550,7 @@ export default async function HomePage() {
             </div>
 
             <div className="mx-auto mt-10 max-w-5xl text-center">
-              <div className="inline-flex items-center gap-3">
+              <div className="inline-flex flex-col items-center gap-3 sm:flex-row">
                 <div className="relative h-14 w-14 overflow-hidden rounded-full border border-[#ffde8a]/40 bg-[#0d2a6f]">
                   <Image
                     src="/images/dod-seal.png"
@@ -560,7 +560,7 @@ export default async function HomePage() {
                     className="object-cover"
                   />
                 </div>
-                <div className="text-left">
+                <div className="text-center sm:text-left">
                   <p className="font-display text-xl font-semibold leading-tight break-words sm:text-3xl lg:text-4xl">
                     USA Defense Military Leave Portal
                   </p>
