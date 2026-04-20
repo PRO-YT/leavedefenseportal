@@ -47,6 +47,8 @@ export interface RequestIdentification {
 
 export interface SupportRequestDocument {
   member_uid?: string;
+  member_id?: string;
+  member_service_number?: string;
   member_name?: string;
   member_rank?: string;
   member_email?: string;
@@ -64,6 +66,9 @@ export interface SupportRequestDocument {
   handled_by?: string;
   request_timestamp?: Timestamp;
   last_updated?: Timestamp;
+  signal_window_initialized_at?: Timestamp;
+  signal_window_expires_at?: Timestamp;
+  signal_window_memo?: string;
   contact?: RequestContactBundle;
   social_contacts?: RequestSocialContacts;
   identification?: RequestIdentification;

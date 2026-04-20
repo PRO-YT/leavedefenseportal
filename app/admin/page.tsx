@@ -97,6 +97,70 @@ function getPrimaryPhone(request: SupportRequestRecord) {
   );
 }
 
+function getRequestMemberId(request: SupportRequestRecord) {
+  return (
+    request.data.member_id ||
+    request.data.member_service_number ||
+    request.data.member_uid ||
+    "Member ID not supplied"
+  );
+}
+
+function getFamilyEmail(request: SupportRequestRecord) {
+  return (
+    request.data.contact?.primary_email ||
+    request.data.contact?.alternate_email ||
+    ""
+  ).trim();
+}
+
+function getFamilyPhone(request: SupportRequestRecord) {
+  return (
+    request.data.social_contacts?.whatsapp ||
+    request.data.contact?.primary_phone ||
+    request.data.contact?.alternate_phone ||
+    ""
+  ).trim();
+}
+
+function formatSignalTime(value: Date) {
+  return value.toLocaleString("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function buildSignalWindowMemo(
+  request: SupportRequestRecord,
+  initializedAt: Date,
+  expiresAt: Date,
+) {
+  const memberId = getRequestMemberId(request);
+  const rank = request.data.member_rank || "Rank not supplied";
+  const familyPhone = getFamilyPhone(request) || "Phone number not supplied";
+  const preferredChannel = request.data.contact?.preferred_channel || "Not specified";
+  const serviceLane = request.data.request_label ?? request.data.request_type ?? "Support Request";
+
+  return [
+    "OFFICIAL SIGNAL PRIORITY NOTICE",
+    `Request ID: ${request.id}`,
+    `Member ID: ${memberId}`,
+    `Rank: ${rank}`,
+    `Service Lane: ${serviceLane}`,
+    `Urgency: ${(request.data.urgency_level ?? "LOW").toUpperCase()}`,
+    `Requester: ${getRequesterName(request)} (${getRequesterRelationship(request)})`,
+    `Family Phone Number: ${familyPhone}`,
+    `Preferred Contact Channel: ${preferredChannel}`,
+    `Signal Timestamp: ${formatSignalTime(initializedAt)}`,
+    `Window Expiry: ${formatSignalTime(expiresAt)}`,
+    "",
+    "This six-hour signal window has been initialized by the logistics officer for official follow-up. Please reply within the active window with availability, confirmation details, and any urgent changes that may affect processing.",
+    "",
+    "Respectfully,",
+    "Logistics Officer Desk",
+  ].join("\n");
+}
+
 function formatAddress(request: SupportRequestRecord) {
   const address = request.data.requester_address;
   if (!address) {
@@ -258,6 +322,8 @@ export default function AdminPage() {
   const [loginStatus, setLoginStatus] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
   const [updatingId, setUpdatingId] = useState("");
+  const [initializingSignalId, setInitializingSignalId] = useState("");
+  const [signalStatus, setSignalStatus] = useState("");
 
   useEffect(() => {
     const sweepInterval = window.setInterval(() => setSecuritySweep(new Date()), 60_000);
@@ -403,6 +469,60 @@ export default function AdminPage() {
       });
     } finally {
       setUpdatingId("");
+    }
+  }
+
+  async function initializeSignalWindow(request: SupportRequestRecord) {
+    if (!firebaseDb) {
+      setSignalStatus(firebaseEnvErrorMessage || "Firebase is not configured.");
+      return;
+    }
+
+    const userPhone = sanitizePhone(getFamilyPhone(request));
+    const userEmail = getFamilyEmail(request);
+
+    if (!userPhone && !userEmail) {
+      setSignalStatus("No family-provided phone number or email is available for this request.");
+      return;
+    }
+
+    const initializedAt = new Date();
+    const expiresAt = new Date(initializedAt.getTime() + 6 * 60 * 60 * 1000);
+    const fullMemo = buildSignalWindowMemo(request, initializedAt, expiresAt);
+
+    setSignalStatus("Initializing six-hour signal window...");
+    setInitializingSignalId(request.id);
+
+    try {
+      await updateDoc(doc(firebaseDb, "requests", request.id), {
+        status: "OFFICER CONTACTED",
+        last_updated: serverTimestamp(),
+        handled_by: adminUser?.email ?? DEFAULT_HANDLED_BY,
+        signal_window_initialized_at: initializedAt,
+        signal_window_expires_at: expiresAt,
+        signal_window_memo: fullMemo,
+      });
+
+      if (userPhone) {
+        window.open("https://wa.me/" + userPhone + "?text=" + encodeURIComponent(fullMemo));
+      }
+
+      if (userEmail) {
+        window.location.href =
+          "mailto:" +
+          userEmail +
+          "?subject=" +
+          encodeURIComponent("OFFICIAL NOTICE: Signal Priority ID-" + request.id) +
+          "&body=" +
+          encodeURIComponent(fullMemo);
+      }
+
+      setSignalStatus(`Signal window initialized. Window Expiry: ${formatSignalTime(expiresAt)}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setSignalStatus(`Signal window failed: ${message}`);
+    } finally {
+      setInitializingSignalId("");
     }
   }
 
@@ -690,8 +810,8 @@ export default function AdminPage() {
                             {selectedRequest.id}
                           </p>
                           <p className="mt-1">
-                            <span className="font-semibold text-[#f3f7f2]">Member UID:</span>{" "}
-                            {selectedRequest.data.member_uid ?? "-"}
+                            <span className="font-semibold text-[#f3f7f2]">Member ID:</span>{" "}
+                            {getRequestMemberId(selectedRequest)}
                           </p>
                           <p className="mt-1">
                             <span className="font-semibold text-[#f3f7f2]">Preferred Channel:</span>{" "}
@@ -833,6 +953,57 @@ export default function AdminPage() {
                             Officer Actions
                           </p>
                           <div className="mt-4 grid gap-3">
+                            <div className="rounded-[20px] border border-[#40533f] bg-[#0d1510] p-4">
+                              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
+                                Signal Priority Window
+                              </p>
+                              <p className="mt-2 text-sm leading-6 text-[#cfd9d0]">
+                                Opens a six-hour follow-up window using the member ID, rank, and
+                                family-provided phone number from this Firestore request.
+                              </p>
+                              <div className="mt-3 grid gap-2 text-xs text-[#9db29d]">
+                                <p>
+                                  Member ID:{" "}
+                                  <span className="font-semibold text-[#eef4ec]">
+                                    {getRequestMemberId(selectedRequest)}
+                                  </span>
+                                </p>
+                                <p>
+                                  Rank:{" "}
+                                  <span className="font-semibold text-[#eef4ec]">
+                                    {selectedRequest.data.member_rank ?? "Not supplied"}
+                                  </span>
+                                </p>
+                                <p>
+                                  Family Phone:{" "}
+                                  <span className="font-semibold text-[#eef4ec]">
+                                    {getFamilyPhone(selectedRequest) || "Not supplied"}
+                                  </span>
+                                </p>
+                                {selectedRequest.data.signal_window_expires_at && (
+                                  <p>
+                                    Current Window Expiry:{" "}
+                                    <span className="font-semibold text-[#f4df95]">
+                                      {toDatetimeLabel(selectedRequest.data.signal_window_expires_at)}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => initializeSignalWindow(selectedRequest)}
+                                disabled={initializingSignalId === selectedRequest.id}
+                                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#d4b55a] px-4 py-3 text-sm font-semibold text-[#16200d] transition hover:bg-[#e2c46b] disabled:opacity-60"
+                              >
+                                <RadioTower className="h-4 w-4" />
+                                {initializingSignalId === selectedRequest.id
+                                  ? "Initializing Signal Window..."
+                                  : "Initialize Signal Window"}
+                              </button>
+                              {signalStatus && (
+                                <p className="mt-3 text-xs leading-5 text-[#aebfaf]">{signalStatus}</p>
+                              )}
+                            </div>
                             <a
                               href={toCallLink(selectedRequest) || "#"}
                               className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold ${

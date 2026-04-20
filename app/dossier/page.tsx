@@ -733,6 +733,8 @@ function DossierPageContent() {
 
       const payload = {
         member_uid: member.id,
+        member_id: displayServiceNumber,
+        member_service_number: displayServiceNumber,
         member_name: member.data.full_name ?? "",
         member_rank: member.data.rank ?? "",
         member_email: member.data.email ?? "",
