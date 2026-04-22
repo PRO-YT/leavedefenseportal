@@ -29,6 +29,10 @@ const HERO_SLIDES = [
   "/images/hero-slide-4.jpeg",
 ] as const;
 
+const SITE_CONTACT_PHONE_DISPLAY = "+1 (267) 607-0897";
+const SITE_CONTACT_PHONE_HREF = "tel:+12676070897";
+const SITE_CONTACT_EMAIL = "leavedefenseportalarmy@gmail.com";
+
 const navLinks = [
   { href: "#home", label: "Home", icon: Home },
   { href: "#about", label: "About Us", icon: Shield },
@@ -127,7 +131,7 @@ export default async function HomePage() {
             </div>
             <div className="flex items-center gap-2 font-medium">
               <Phone className="h-4 w-4" />
-              24/7 Crisis Line: 1-800-MILITARY
+              24/7 Contact Line: {SITE_CONTACT_PHONE_DISPLAY}
             </div>
             <div className="flex items-center gap-3 font-semibold uppercase tracking-[0.08em] text-[#10284f]">
               Operational
@@ -608,11 +612,25 @@ export default async function HomePage() {
                   24/7 Support
                 </h3>
                 <div className="mt-3 rounded-xl bg-white/15 px-4 py-4">
-                  <p className="inline-flex items-center gap-2 text-sm font-semibold">
-                    <Mail className="h-5 w-5 text-[#f7d879]" />
-                    Email Support
-                  </p>
-                  <p className="mt-2 text-sm text-[#e7edf4]">leavedefenseportalarmy@gmail.com</p>
+                  <div>
+                    <p className="inline-flex items-center gap-2 text-sm font-semibold">
+                      <Phone className="h-5 w-5 text-[#f7d879]" />
+                      Phone Support
+                    </p>
+                    <a
+                      href={SITE_CONTACT_PHONE_HREF}
+                      className="mt-2 block text-sm text-[#e7edf4] transition hover:text-white"
+                    >
+                      {SITE_CONTACT_PHONE_DISPLAY}
+                    </a>
+                  </div>
+                  <div className="mt-4 border-t border-white/15 pt-4">
+                    <p className="inline-flex items-center gap-2 text-sm font-semibold">
+                      <Mail className="h-5 w-5 text-[#f7d879]" />
+                      Email Support
+                    </p>
+                    <p className="mt-2 break-words text-sm text-[#e7edf4]">{SITE_CONTACT_EMAIL}</p>
+                  </div>
                 </div>
               </section>
             </div>
