@@ -58,6 +58,11 @@ interface MemberDocument {
   branch?: string;
   unit?: string;
   status?: string;
+  countries_visited?: string[];
+  current_country?: string;
+  current_mission_region?: string;
+  months_served_current_tour?: number | null;
+  months_remaining_current_tour?: number | null;
   gallery_state?: {
     official_portrait_url?: string;
     tactical_photo_url?: string;
@@ -253,6 +258,62 @@ function toMissionDisplay(value: string | MissionTourObject) {
   return `${country} (${start} -> ${end})`;
 }
 
+function collectVisitedCountries(
+  explicitCountries: string[] | undefined,
+  missionTours: Array<string | MissionTourObject>,
+) {
+  const countries = new Set<string>();
+
+  for (const country of explicitCountries ?? []) {
+    const trimmed = country.trim();
+    if (trimmed) {
+      countries.add(trimmed);
+    }
+  }
+
+  for (const tour of missionTours) {
+    if (typeof tour === "string") {
+      const trimmed = tour.trim();
+      if (trimmed) {
+        countries.add(trimmed);
+      }
+      continue;
+    }
+
+    const country = tour.country?.trim();
+    if (country) {
+      countries.add(country);
+    }
+  }
+
+  return [...countries];
+}
+
+function formatTourProgress(
+  monthsServed: number | null | undefined,
+  monthsRemaining: number | null | undefined,
+) {
+  const hasServed = typeof monthsServed === "number" && Number.isFinite(monthsServed);
+  const hasRemaining =
+    typeof monthsRemaining === "number" && Number.isFinite(monthsRemaining);
+
+  if (!hasServed && !hasRemaining) {
+    return "-";
+  }
+
+  const segments: string[] = [];
+
+  if (hasServed) {
+    segments.push(`${monthsServed} month${monthsServed === 1 ? "" : "s"} served`);
+  }
+
+  if (hasRemaining) {
+    segments.push(`${monthsRemaining} month${monthsRemaining === 1 ? "" : "s"} remaining`);
+  }
+
+  return segments.join(" / ");
+}
+
 function normalizeService(value: string | null): ServiceType | null {
   const upperValue = value?.toUpperCase();
 
@@ -371,6 +432,10 @@ function DossierPageContent() {
   }, [requestedService]);
 
   const missionGeography = member?.data.mission_geography ?? [];
+  const countriesVisited = useMemo(
+    () => collectVisitedCountries(member?.data.countries_visited, missionGeography),
+    [member, missionGeography],
+  );
   const medicalRecords = member?.data.medical_ledger?.records ?? [];
   const officialPortraitUrl =
     normalizeImageUrl(member?.data.gallery_state?.official_portrait_url) ?? OFFICIAL_PLACEHOLDER;
@@ -391,6 +456,10 @@ function DossierPageContent() {
   const certificationImages = usingLegacyGalleryBucket ? [] : rawCertificationImages;
   const galleryPreviewImages = galleryImages.slice(0, 3);
   const mwrImpactLabel = getMwrImpactLabel(mwrDonationAmount);
+  const currentTourProgress = formatTourProgress(
+    member?.data.months_served_current_tour,
+    member?.data.months_remaining_current_tour,
+  );
 
   const intakeSummary = useMemo(() => {
     return [
@@ -1097,6 +1166,60 @@ function DossierPageContent() {
                         </li>
                       )}
                     </ul>
+                  </article>
+
+                  <article className="rounded-[22px] border border-[#364834] bg-black/20 p-4">
+                    <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#d8b85a]">
+                      <MapPinned className="h-4 w-4" />
+                      Current Assignment
+                    </p>
+                    <div className="mt-4 grid gap-3 text-sm text-[#e5ece4] sm:grid-cols-2">
+                      <p>
+                        <span className="text-[#97ac97]">Current Country</span>
+                        <br />
+                        {member.data.current_country?.trim() || "-"}
+                      </p>
+                      <p>
+                        <span className="text-[#97ac97]">Mission Region</span>
+                        <br />
+                        {member.data.current_mission_region?.trim() || "-"}
+                      </p>
+                      <p>
+                        <span className="text-[#97ac97]">Current Tour Progress</span>
+                        <br />
+                        {currentTourProgress}
+                      </p>
+                      <p>
+                        <span className="text-[#97ac97]">Return Window</span>
+                        <br />
+                        {typeof member.data.months_remaining_current_tour === "number"
+                          ? `${member.data.months_remaining_current_tour} month${member.data.months_remaining_current_tour === 1 ? "" : "s"} remaining`
+                          : "-"}
+                      </p>
+                    </div>
+                  </article>
+
+                  <article className="rounded-[22px] border border-[#364834] bg-black/20 p-4">
+                    <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#d8b85a]">
+                      <BadgeCheck className="h-4 w-4" />
+                      Countries Visited
+                    </p>
+                    {countriesVisited.length > 0 ? (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {countriesVisited.map((country) => (
+                          <span
+                            key={country}
+                            className="rounded-full border border-[#40533f] bg-[#101912] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-[#dfe7df]"
+                          >
+                            {country}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-xl border border-[#2f4130] bg-[#0e1711] px-3 py-2 text-sm text-[#dfe7df]">
+                        No countries visited are on file.
+                      </div>
+                    )}
                   </article>
 
                   <article className="rounded-[22px] border border-[#364834] bg-black/20 p-4">

@@ -87,6 +87,69 @@ function normalizeSeedAssetArray(values) {
   return unique;
 }
 
+function normalizeSeedText(value) {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+function normalizeSeedTextArray(values) {
+  const unique = [];
+  const seen = new Set();
+
+  for (const value of Array.isArray(values) ? values : []) {
+    if (typeof value !== "string") {
+      continue;
+    }
+
+    const trimmed = value.trim();
+    if (trimmed && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      unique.push(trimmed);
+    }
+  }
+
+  return unique;
+}
+
+function normalizeSeedNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return undefined;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function stripUndefinedDeep(value) {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => stripUndefinedDeep(entry))
+      .filter((entry) => entry !== undefined);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .map(([key, entry]) => [key, stripUndefinedDeep(entry)])
+        .filter(([, entry]) => entry !== undefined),
+    );
+  }
+
+  return value;
+}
+
 function normalizeGalleryState(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return value;
@@ -172,11 +235,17 @@ function normalizeSeedPayload(rawData) {
   payload.phone = typeof payload.phone === "string" ? payload.phone.trim() : payload.phone;
   payload.service_number = serviceNumber;
   payload.gallery_state = normalizeGalleryState(payload.gallery_state);
+  payload.countries_visited = normalizeSeedTextArray(payload.countries_visited);
+  payload.current_country = normalizeSeedText(payload.current_country);
+  payload.current_mission_region = normalizeSeedText(payload.current_mission_region);
+  payload.months_served_current_tour = normalizeSeedNumber(payload.months_served_current_tour);
+  payload.months_remaining_current_tour = normalizeSeedNumber(payload.months_remaining_current_tour);
+  const sanitizedPayload = stripUndefinedDeep(payload);
 
   return {
     documentId,
     serviceNumber,
-    payload,
+    payload: sanitizedPayload,
   };
 }
 

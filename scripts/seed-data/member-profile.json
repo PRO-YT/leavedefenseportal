@@ -59,6 +59,16 @@
       "tour_end": "2024-01-12"
     }
   ],
+  "countries_visited": [
+    "Afghanistan",
+    "Jordan",
+    "Iraq",
+    "South Korea"
+  ],
+  "current_country": "",
+  "current_mission_region": "",
+  "months_served_current_tour": null,
+  "months_remaining_current_tour": null,
   "medical_ledger": {
     "blood_type": "O+",
     "injury_history": "2013 blast concussion (fatal-risk), 2016 tibia fracture, 2019 shrapnel injury (fatal-risk), 2024 heat injury.",
