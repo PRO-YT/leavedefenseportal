@@ -65,10 +65,10 @@
     "Iraq",
     "South Korea"
   ],
-  "current_country": "",
-  "current_mission_region": "",
-  "months_served_current_tour": null,
-  "months_remaining_current_tour": null,
+  "current_country": "Syria",
+  "current_mission_region": "Syria",
+  "months_served_current_tour": 30,
+  "months_remaining_current_tour": 2,
   "medical_ledger": {
     "blood_type": "O+",
     "injury_history": "2013 blast concussion (fatal-risk), 2016 tibia fracture, 2019 shrapnel injury (fatal-risk), 2024 heat injury.",
