@@ -63,11 +63,18 @@ img {
   height: auto;
 }
 
+iframe {
+  display: block;
+  max-width: 100%;
+  border: 0;
+}
+
 button,
 input,
 select,
 textarea {
   font: inherit;
+  min-width: 0;
 }
 
 ::selection {
@@ -104,6 +111,11 @@ textarea {
 
 .text-balance {
   text-wrap: balance;
+}
+
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media (prefers-reduced-motion: reduce) {

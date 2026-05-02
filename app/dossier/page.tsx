@@ -15,7 +15,7 @@ import { useSearchParams } from "next/navigation";
 import {
   addDoc,
   collection,
-  getDocs,
+  getDocsFromServer,
   limit,
   query,
   serverTimestamp,
@@ -571,7 +571,7 @@ function DossierPageContent() {
         ].filter((value, index, collection) => value && collection.indexOf(value) === index);
 
         for (const candidate of serviceCandidates) {
-          const attempt = await getDocs(
+          const attempt = await getDocsFromServer(
             query(membersRef, where("service_number", "==", candidate), limit(1)),
           );
           if (!attempt.empty) {
@@ -581,11 +581,13 @@ function DossierPageContent() {
         }
 
         if (!snapshot || snapshot.empty) {
-          snapshot = await getDocs(query(membersRef, where("email", "==", term), limit(1)));
+          snapshot = await getDocsFromServer(
+            query(membersRef, where("email", "==", term), limit(1)),
+          );
         }
 
         if (snapshot.empty) {
-          snapshot = await getDocs(
+          snapshot = await getDocsFromServer(
             query(membersRef, where("email", "==", term.toLowerCase()), limit(1)),
           );
         }
@@ -881,12 +883,12 @@ function DossierPageContent() {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(162,180,140,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(162,180,140,0.045)_1px,transparent_1px)] bg-[size:56px_56px] opacity-30" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_18px,#101610_18px,#101610_36px)]" />
 
-      <div className="relative mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="relative mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
         <header className="soft-outline panel-sheen mb-6 overflow-hidden rounded-[28px] border border-[#334531] bg-[linear-gradient(135deg,rgba(11,23,14,0.95),rgba(18,35,22,0.93))]">
-          <div className="grid gap-4 border-b border-[#314332] px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#d8b85a] sm:grid-cols-3 sm:px-7">
+          <div className="grid gap-4 border-b border-[#314332] px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#d8b85a] md:grid-cols-3 sm:px-7">
             <p>Controlled Unclassified Intake</p>
-            <p className="sm:text-center">Family Support Verification Packet</p>
-            <p className="sm:text-right">Last Security Sweep {securitySweep.toLocaleTimeString()}</p>
+            <p className="md:text-center">Family Support Verification Packet</p>
+            <p className="md:text-right">Last Security Sweep {securitySweep.toLocaleTimeString()}</p>
           </div>
           <div className="grid gap-5 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
@@ -932,7 +934,7 @@ function DossierPageContent() {
         )}
 
         <section className="soft-outline mb-6 overflow-hidden rounded-[28px] border border-[#304230] bg-[linear-gradient(135deg,rgba(13,23,16,0.96),rgba(19,31,22,0.94))]">
-          <div className="grid gap-6 px-5 py-6 sm:px-7 xl:grid-cols-[1.2fr_0.8fr] xl:items-center">
+          <div className="grid gap-6 px-5 py-6 sm:px-7 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
                 Member Search Console
@@ -990,13 +992,13 @@ function DossierPageContent() {
         </section>
 
         {member && (
-          <section className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
+          <section className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
             <aside className="soft-outline overflow-hidden rounded-[28px] border border-[#334631] bg-[linear-gradient(180deg,rgba(13,22,16,0.98),rgba(16,28,20,0.97))]">
               <div className="border-b border-[#314332] px-5 py-4 sm:px-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
                   Confidential Dossier
                 </p>
-                <h2 className="mt-2 font-display text-3xl font-semibold text-[#f1f6ef]">
+                <h2 className="mt-2 text-balance break-words font-display text-3xl font-semibold text-[#f1f6ef]">
                   {member.data.full_name ?? "Unknown Member"}
                 </h2>
                 <p className="mt-2 text-sm text-[#9fb39f]">
@@ -1004,7 +1006,7 @@ function DossierPageContent() {
                 </p>
               </div>
 
-              <div className="grid gap-4 px-5 py-5 sm:px-6">
+              <div className="grid gap-4 px-5 py-5 [overflow-wrap:anywhere] sm:px-6">
                 <article className="rounded-[24px] border border-[#364834] bg-black/20 p-3">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#9cb499]">
                     Official Portrait
@@ -1012,7 +1014,7 @@ function DossierPageContent() {
                   <img
                     src={officialPortraitUrl}
                     alt="Official portrait"
-                    className="h-72 w-full rounded-[20px] object-cover"
+                    className="h-64 w-full rounded-[20px] object-cover sm:h-72"
                   />
                 </article>
 
@@ -1064,7 +1066,7 @@ function DossierPageContent() {
                   <img
                     src={tacticalPhotoUrl}
                     alt="Field photo"
-                    className="h-48 w-full rounded-[20px] object-cover"
+                    className="h-44 w-full rounded-[20px] object-cover sm:h-48"
                   />
                 </article>
 
@@ -1115,7 +1117,7 @@ function DossierPageContent() {
                   </p>
                 </div>
 
-                <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-2">
+                <div className="grid gap-4 px-5 py-5 [overflow-wrap:anywhere] sm:px-6 lg:grid-cols-2">
                   <article className="rounded-[22px] border border-[#364834] bg-black/20 p-4">
                     <p className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-[#d8b85a]">
                       <CalendarClock className="h-4 w-4" />
@@ -1315,7 +1317,7 @@ function DossierPageContent() {
                     logistics officer.
                   </p>
                 </div>
-                <div className="grid gap-4 px-5 py-5 sm:px-6 lg:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 px-5 py-5 sm:px-6 md:grid-cols-2 2xl:grid-cols-4">
                   {visibleServices.map((service) => (
                     <button
                       key={service.type}
@@ -1363,7 +1365,7 @@ function DossierPageContent() {
                   </div>
                 </div>
                 {galleryImages.length > 0 ? (
-                  <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6 xl:grid-cols-4">
+                  <div className="grid gap-4 px-5 py-5 md:grid-cols-2 sm:px-6 xl:grid-cols-4">
                     {galleryImages.map((url, index) => {
                       const featured = index === 0;
 
@@ -1376,7 +1378,7 @@ function DossierPageContent() {
                             src={url}
                             alt={`Gallery image ${index + 1}`}
                             className={`w-full rounded-[22px] border border-[#364834] bg-[#0d1510] object-cover ${
-                              featured ? "h-full min-h-[19rem]" : "h-40"
+                              featured ? "h-full min-h-[16rem] sm:min-h-[19rem]" : "h-44 sm:h-40"
                             }`}
                           />
                         </figure>
@@ -1404,13 +1406,13 @@ function DossierPageContent() {
                   </p>
                 </div>
                 {certificationImages.length > 0 ? (
-                  <div className="grid gap-4 px-5 py-5 sm:grid-cols-2 sm:px-6 xl:grid-cols-3">
+                  <div className="grid gap-4 px-5 py-5 md:grid-cols-2 sm:px-6 xl:grid-cols-3">
                     {certificationImages.map((url, index) => (
                       <img
                         key={`${url}-${index}`}
                         src={url}
                         alt={`Certification scan ${index + 1}`}
-                        className="h-40 w-full rounded-[22px] border border-[#364834] bg-[#0d1510] object-cover"
+                        className="h-44 w-full rounded-[22px] border border-[#364834] bg-[#0d1510] object-cover sm:h-40"
                       />
                     ))}
                   </div>
@@ -1428,8 +1430,9 @@ function DossierPageContent() {
       </div>
 
       {modalOpen && selectedServiceDetails && member && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 sm:flex sm:items-center sm:justify-center sm:p-4">
-          <div className="soft-outline min-h-dvh w-full overflow-hidden rounded-none border-y border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)] sm:min-h-0 sm:max-w-5xl sm:rounded-[30px] sm:border">
+        <div className="fixed inset-0 z-50 bg-black/80 sm:p-4">
+          <div className="flex h-full items-stretch sm:items-center sm:justify-center">
+            <div className="soft-outline flex min-h-dvh w-full flex-col overflow-hidden rounded-none border-y border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)] sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-5xl sm:rounded-[30px] sm:border">
             <div className="border-b border-[#334631] bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_14px,#0f160f_14px,#0f160f_28px)] px-5 py-2 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#11170f] sm:px-6">
               Confidential Support Intake Packet
             </div>
@@ -1455,7 +1458,7 @@ function DossierPageContent() {
               </button>
             </div>
 
-            <div className="grid gap-2 border-y border-[#334631] bg-black/10 px-5 py-4 sm:grid-cols-4 sm:px-6">
+            <div className="grid grid-cols-2 gap-2 border-y border-[#334631] bg-black/10 px-4 py-4 sm:grid-cols-4 sm:px-6">
               {REQUEST_STEPS.map((stepLabel, index) => {
                 const stepNumber = index + 1;
                 const active = modalStep === stepNumber;
@@ -1464,7 +1467,7 @@ function DossierPageContent() {
                 return (
                   <div
                     key={stepLabel}
-                    className={`rounded-2xl border px-4 py-3 text-sm ${
+                    className={`min-w-0 rounded-2xl border px-4 py-3 text-sm ${
                       active
                         ? "border-[#d4b55a] bg-[#1b2414] text-[#f4df95]"
                         : completed
@@ -1481,7 +1484,7 @@ function DossierPageContent() {
               })}
             </div>
 
-            <div className="max-h-[calc(100dvh-13rem)] overflow-y-auto px-5 py-5 sm:max-h-[70dvh] sm:px-6">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 [overflow-wrap:anywhere] sm:px-6">
               {modalStep === 1 && (
                 <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
                   <article className="rounded-[24px] border border-[#364834] bg-black/20 p-5">
@@ -1665,7 +1668,7 @@ function DossierPageContent() {
                         />
                       </div>
                       {selectedServiceDetails.type === "MWR" && (
-                        <div className="rounded-[20px] border border-[#7a6530] bg-[#1c170c] p-4">
+                        <div className="rounded-[20px] border border-[#7a6530] bg-[#1c170c] p-4 md:col-span-2">
                           <p className="font-semibold text-[#fff3bd]">MWR Support Checkout</p>
                           <p className="mt-2 text-[#eadca7]">
                             Badge: {MWR_TAX_EXEMPT_BADGE}
@@ -1732,7 +1735,7 @@ function DossierPageContent() {
               )}
 
               {modalStep === 3 && (
-                <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+                <section className="grid gap-4 lg:grid-cols-2">
                   <article className="rounded-[24px] border border-[#364834] bg-black/20 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#d6b14f]">
                       Contact Matrix
@@ -1846,7 +1849,7 @@ function DossierPageContent() {
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
                         placeholder="Provide the most complete logistics context available for review."
-                        className="min-h-[18rem] w-full rounded-xl border border-[#445744] bg-[#0d1710] px-3 py-2.5 text-sm text-[#eef4ec] outline-none focus:border-[#d4b55a]"
+                        className="min-h-[14rem] w-full rounded-xl border border-[#445744] bg-[#0d1710] px-3 py-2.5 text-sm text-[#eef4ec] outline-none focus:border-[#d4b55a] sm:min-h-[18rem]"
                       />
                     </div>
                   </article>
@@ -1854,7 +1857,7 @@ function DossierPageContent() {
               )}
 
               {modalStep === 4 && (
-                <section className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                <section className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
                   <article className="rounded-[24px] border border-[#364834] bg-black/20 p-5">
                     <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#d6b14f]">
                       <Fingerprint className="h-4 w-4" />
@@ -1898,7 +1901,7 @@ function DossierPageContent() {
                             <img
                               src={frontImagePreview || frontImageUrl}
                               alt="Front ID preview"
-                              className="mt-3 h-36 w-full rounded-xl object-cover"
+                              className="mt-3 h-40 w-full rounded-xl object-cover sm:h-36"
                             />
                           )}
                         </div>
@@ -1926,7 +1929,7 @@ function DossierPageContent() {
                             <img
                               src={backImagePreview || backImageUrl}
                               alt="Back ID preview"
-                              className="mt-3 h-36 w-full rounded-xl object-cover"
+                              className="mt-3 h-40 w-full rounded-xl object-cover sm:h-36"
                             />
                           )}
                         </div>
@@ -2039,6 +2042,7 @@ function DossierPageContent() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       )}
     </main>

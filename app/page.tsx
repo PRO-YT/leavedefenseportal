@@ -116,24 +116,24 @@ export default async function HomePage() {
   const homepageNews = latestNews.slice(0, 6);
 
   return (
-    <main className="min-h-dvh w-full pb-0 text-[0.95rem] sm:text-base">
+    <main className="min-h-dvh w-full pb-24 text-[0.95rem] sm:pb-28 sm:text-base">
       <div className="min-h-dvh w-full">
         <section
           id="home"
           className="flex min-h-[100dvh] w-full flex-col overflow-hidden border border-white/10 border-x-0 border-t-0 bg-[linear-gradient(120deg,#253220_0%,#5e6954_100%)]"
         >
-          <div className="flex flex-col items-start gap-3 border-b border-[#d9dee5] bg-white px-4 py-3 text-sm text-[#1a2b4c] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-7">
-            <div className="flex items-center gap-2 font-semibold">
+          <div className="flex flex-col gap-3 border-b border-[#d9dee5] bg-white px-4 py-3 text-sm text-[#1a2b4c] sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-7">
+            <div className="flex min-w-0 items-center gap-2 font-semibold">
               <span className="rounded-md bg-[#13a84d] px-2 py-1 text-[0.72rem] font-bold tracking-[0.08em] text-white">
                 SECURE
               </span>
               Official Government Leave Department
             </div>
-            <div className="flex items-center gap-2 font-medium">
+            <div className="flex min-w-0 flex-wrap items-center gap-2 font-medium">
               <Phone className="h-4 w-4" />
               24/7 Contact Line: {SITE_CONTACT_PHONE_DISPLAY}
             </div>
-            <div className="flex items-center gap-3 font-semibold uppercase tracking-[0.08em] text-[#10284f]">
+            <div className="flex min-w-0 flex-wrap items-center gap-3 font-semibold uppercase tracking-[0.08em] text-[#10284f]">
               Operational
               <span className="inline-flex items-center gap-2 rounded-full border border-[#9dc7b1] bg-[#def3e8] px-3 py-1 text-xs">
                 <BadgeCheck className="h-4 w-4" />
@@ -143,8 +143,8 @@ export default async function HomePage() {
           </div>
 
           <div className="flex-1 px-4 py-6 sm:px-7 sm:py-7">
-            <div className="grid gap-5 border-b border-white/25 pb-6 lg:grid-cols-[1fr_auto] lg:items-center">
-              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <div className="grid gap-5 border-b border-white/25 pb-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div className="flex min-w-0 flex-col items-start gap-4 sm:flex-row sm:items-center">
                 <div className="relative h-16 w-16 overflow-hidden rounded-full border border-[#ffde8a]/40 bg-[#0d2a6f]">
                   <Image
                     src="/images/dod-seal.png"
@@ -154,16 +154,16 @@ export default async function HomePage() {
                     className="object-cover"
                   />
                 </div>
-                <div>
-                  <h1 className="font-display text-[2rem] font-semibold leading-tight text-white sm:text-4xl sm:leading-none lg:text-5xl">
+                <div className="min-w-0">
+                  <h1 className="text-balance break-words font-display text-[clamp(2rem,6vw,4.5rem)] font-semibold leading-[0.95] text-white">
                     USA Defense Military Leave Portal
                   </h1>
-                  <p className="mt-2 text-base italic text-[#f4e6be] sm:text-lg">
+                  <p className="mt-2 text-sm italic text-[#f4e6be] sm:text-lg">
                     Honor, Service, Excellence, Sacrifice
                   </p>
                 </div>
               </div>
-              <div className="rounded-2xl border border-white/20 bg-black/15 px-5 py-4 text-left sm:text-right">
+              <div className="w-full rounded-2xl border border-white/20 bg-black/15 px-5 py-4 text-left sm:w-auto sm:text-right">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#f4e6be]">
                   Authorized Assistance
                 </p>
@@ -190,24 +190,24 @@ export default async function HomePage() {
               <HeroBackgroundSlider
                 slides={HERO_SLIDES}
                 intervalMs={3000}
-                className="h-[68dvh] min-h-[380px] w-full sm:min-h-[480px]"
+                className="h-[clamp(30rem,72vh,46rem)] w-full"
               />
               <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,17,11,0.08)_0%,rgba(9,17,11,0.64)_48%,rgba(9,17,11,0.78)_100%)]" />
-              <div className="absolute inset-0 flex items-center justify-center px-4 text-center sm:px-6">
-                <div className="max-w-4xl">
-                  <p className="text-sm font-semibold uppercase tracking-[0.3em] text-[#f4e6be]">
+              <div className="absolute inset-0 flex items-end justify-center px-4 py-8 text-center sm:items-center sm:px-6 sm:py-10">
+                <div className="max-w-[56rem]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#f4e6be] sm:text-sm">
                     Official U.S. Military Service
                   </p>
-                  <h2 className="mt-4 font-display text-[2.2rem] font-semibold leading-[0.95] text-white sm:text-5xl lg:text-7xl">
+                  <h2 className="mt-4 text-balance font-display text-[clamp(2.35rem,8vw,5.5rem)] font-semibold leading-[0.95] text-white">
                     Supporting Our Heroes
                     <br />
                     & Their Families
                   </h2>
-                  <p className="mx-auto mt-5 max-w-3xl text-base leading-7 text-[#ebeff3] sm:text-lg sm:leading-8">
+                  <p className="mx-auto mt-5 max-w-[44rem] text-sm leading-7 text-[#ebeff3] sm:text-lg sm:leading-8">
                     The military leave program helps service members balance duty and family life
                     through secure, policy-aligned leave and support workflows.
                   </p>
-                  <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                  <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
                     <Link
                       href="/dossier?service=FLIGHT"
                       className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#edc619] px-7 py-3 text-base font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:w-auto sm:text-lg"
@@ -229,13 +229,13 @@ export default async function HomePage() {
           </div>
         </section>
 
-        <div className="space-y-14 border border-[#d2d7dd] border-x-0 border-b-0 bg-[#eceef1] px-4 py-10 text-[#12284b] sm:px-8 sm:py-12 lg:px-12 lg:py-16 lg:space-y-20">
+        <div className="space-y-12 border border-[#d2d7dd] border-x-0 border-b-0 bg-[#eceef1] px-4 py-10 text-[#12284b] sm:px-6 sm:py-12 lg:px-12 lg:py-16 lg:space-y-20">
           <section>
             <h2 className="text-center font-display text-3xl font-semibold leading-none sm:text-4xl lg:text-5xl">
               Featured Video
             </h2>
             <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-[#d1d7df] bg-white shadow-xl">
-              <div className="relative h-[420px] w-full sm:h-[500px] lg:h-[560px]">
+              <div className="relative aspect-video w-full">
                 <iframe
                   src="https://www.youtube.com/embed/Rrcb36pCWD0?start=128&autoplay=1&mute=1&controls=1&rel=0&modestbranding=1&playsinline=1"
                   title="Featured video player"
@@ -353,7 +353,7 @@ export default async function HomePage() {
                   </h3>
                   <div className="relative mt-4 overflow-hidden rounded-2xl border border-[#d1d7df]">
                     {item.videoEmbedUrl ? (
-                      <div className="relative h-52 w-full sm:h-56">
+                      <div className="relative aspect-video w-full">
                         <iframe
                           src={item.videoEmbedUrl}
                           title={item.title}
@@ -370,7 +370,7 @@ export default async function HomePage() {
                           alt={item.title}
                           width={920}
                           height={560}
-                          className="h-52 w-full object-cover sm:h-56"
+                          className="aspect-video w-full object-cover"
                         />
                         <div className="absolute inset-0 bg-black/25" />
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -463,18 +463,18 @@ export default async function HomePage() {
             <h2 className="text-center font-display text-3xl font-semibold leading-none sm:text-4xl lg:text-5xl">
               Available Support Applications
             </h2>
-            <div className="mt-8 grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-8 grid items-stretch gap-5 md:grid-cols-2 xl:grid-cols-4">
               {supportCards.map((card) => (
                 <article
                   key={card.id}
-                    className="flex h-full min-h-[320px] flex-col overflow-hidden rounded-[1.1rem] border border-[#cfd5de] bg-white shadow-sm sm:min-h-[360px]"
+                  className="flex h-full flex-col overflow-hidden rounded-[1.1rem] border border-[#cfd5de] bg-white shadow-sm"
                 >
                   <Image
                     src={card.image}
                     alt={card.title}
                     width={640}
                     height={400}
-                    className="h-24 w-full object-cover sm:h-28"
+                    className="h-28 w-full object-cover sm:h-32"
                   />
                   <div className="flex flex-1 flex-col p-4">
                     <h3 className="font-display text-lg font-semibold leading-tight break-words text-[#1a355f] sm:text-xl">
@@ -514,7 +514,7 @@ export default async function HomePage() {
                 alt="U.S. service members moving across an operations zone."
                 width={920}
                 height={640}
-                className="h-[280px] w-full object-cover sm:h-[320px]"
+                className="aspect-[16/10] w-full object-cover"
               />
             </div>
             <div>
@@ -619,7 +619,7 @@ export default async function HomePage() {
                     </p>
                     <a
                       href={SITE_CONTACT_PHONE_HREF}
-                      className="mt-2 block text-sm text-[#e7edf4] transition hover:text-white"
+                      className="mt-2 block break-all text-sm text-[#e7edf4] transition hover:text-white sm:break-normal"
                     >
                       {SITE_CONTACT_PHONE_DISPLAY}
                     </a>

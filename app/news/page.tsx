@@ -10,7 +10,7 @@ export default async function NewsIndexPage() {
   const articles = await getMilitaryNews(100);
 
   return (
-    <main className="min-h-dvh bg-[#eceef1] px-5 py-8 text-[#14294b] sm:px-8 lg:px-12">
+    <main className="min-h-dvh bg-[#eceef1] px-4 py-8 text-[#14294b] sm:px-6 lg:px-12">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
           <Link
@@ -34,7 +34,7 @@ export default async function NewsIndexPage() {
             {articles.map((article) => (
               <article
                 key={article.id}
-                className="rounded-2xl border border-[#d1d8e1] bg-white p-5 shadow-sm"
+                className="rounded-2xl border border-[#d1d8e1] bg-white p-4 shadow-sm sm:p-5"
               >
                 <div className="relative mb-4 overflow-hidden rounded-xl border border-[#d1d8e1]">
                   <Image
@@ -42,13 +42,13 @@ export default async function NewsIndexPage() {
                     alt={article.title}
                     width={960}
                     height={480}
-                    className="h-44 w-full object-cover sm:h-56"
+                    className="aspect-[16/9] w-full object-cover"
                   />
                 </div>
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#49608a] sm:text-sm">
-                  {article.source} - {formatMilitaryNewsDate(article.publishedAt)}
+                  {article.source} | {formatMilitaryNewsDate(article.publishedAt)}
                 </p>
-                <h2 className="mt-2 font-display text-xl font-semibold leading-tight text-[#14294b] sm:text-2xl">
+                <h2 className="mt-2 text-balance break-words font-display text-xl font-semibold leading-tight text-[#14294b] sm:text-2xl">
                   {article.title}
                 </h2>
                 <p className="mt-3 text-sm leading-6 text-[#2e415d] sm:text-base sm:leading-7">
@@ -57,7 +57,7 @@ export default async function NewsIndexPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-4">
                   <Link
                     href={`/news/${article.id}`}
-                    className="inline-flex items-center rounded-full bg-[#edc619] px-5 py-2 text-sm font-bold text-[#1b2415] transition hover:bg-[#f6d64f]"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[#edc619] px-5 py-2 text-sm font-bold text-[#1b2415] transition hover:bg-[#f6d64f] sm:w-auto"
                   >
                     Read full article
                   </Link>
@@ -65,7 +65,7 @@ export default async function NewsIndexPage() {
                     href={article.link}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-[#1b355f] hover:underline"
+                    className="inline-flex w-full items-center justify-center gap-2 text-sm font-semibold text-[#1b355f] hover:underline sm:w-auto sm:justify-start"
                   >
                     Read original source
                     <ExternalLink className="h-4 w-4" />

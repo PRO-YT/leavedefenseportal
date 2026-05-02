@@ -1114,12 +1114,12 @@ export default function AdminPage() {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,168,133,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(148,168,133,0.05)_1px,transparent_1px)] bg-[size:62px_62px] opacity-30" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_18px,#0f150f_18px,#0f150f_36px)]" />
 
-      <div className="relative mx-auto w-full max-w-[1480px] px-4 py-6 sm:px-6 lg:px-8">
+      <div className="relative mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
         <header className="soft-outline panel-sheen mb-6 overflow-hidden rounded-[30px] border border-[#233426] bg-[linear-gradient(135deg,rgba(11,20,14,0.97),rgba(15,27,18,0.95))]">
-          <div className="grid gap-4 border-b border-[#2d4031] px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#d6b14f] sm:grid-cols-3 sm:px-7">
+          <div className="grid gap-4 border-b border-[#2d4031] px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#d6b14f] md:grid-cols-3 sm:px-7">
             <p>Restricted Logistics Console</p>
-            <p className="sm:text-center">Administrative Case Review Board</p>
-            <p className="sm:text-right">Sweep {securitySweep.toLocaleTimeString()}</p>
+            <p className="md:text-center">Administrative Case Review Board</p>
+            <p className="md:text-right">Sweep {securitySweep.toLocaleTimeString()}</p>
           </div>
           <div className="grid gap-5 px-5 py-6 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
@@ -1246,7 +1246,7 @@ export default function AdminPage() {
           </section>
         ) : (
           <>
-            <section className="grid gap-4 md:grid-cols-3 xl:grid-cols-4">
+            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <article className="soft-outline rounded-[24px] border border-[#233426] bg-[linear-gradient(180deg,rgba(13,22,16,0.98),rgba(16,28,20,0.96))] p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#9cb499]">
                   Unreviewed
@@ -1278,7 +1278,7 @@ export default function AdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#9cb499]">
                   Signed In Officer
                 </p>
-                <p className="mt-3 text-base font-semibold text-[#f2f7f2]">{adminUser.email}</p>
+                <p className="mt-3 break-all text-base font-semibold text-[#f2f7f2]">{adminUser.email}</p>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -1289,7 +1289,7 @@ export default function AdminPage() {
               </article>
             </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-[360px_1fr]">
+            <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)]">
               <aside className="soft-outline overflow-hidden rounded-[28px] border border-[#233426] bg-[linear-gradient(180deg,rgba(12,21,15,0.98),rgba(16,28,20,0.96))]">
                 <div className="border-b border-[#2d4031] px-5 py-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
@@ -1334,7 +1334,7 @@ export default function AdminPage() {
                   </p>
                 </div>
 
-                <div className="max-h-[74dvh] space-y-3 overflow-y-auto px-4 py-4">
+                <div className="max-h-[60dvh] space-y-3 overflow-y-auto px-4 py-4 lg:max-h-[74dvh]">
                   {requests.length === 0 ? (
                     <div className="rounded-[22px] border border-[#324533] bg-black/20 px-4 py-5 text-sm text-[#93a692]">
                       No requests yet. Submit a support application from the dossier portal to start
@@ -1351,7 +1351,7 @@ export default function AdminPage() {
                           key={record.id}
                           type="button"
                           onClick={() => setSelectedRequestId(record.id)}
-                          className={`w-full rounded-[22px] border p-4 text-left transition ${
+                          className={`w-full min-w-0 rounded-[22px] border p-4 text-left transition ${
                             active
                               ? "border-[#d6b14f] bg-[#162116]"
                               : "border-[#324533] bg-black/20 hover:border-[#566c53]"
@@ -1362,7 +1362,7 @@ export default function AdminPage() {
                               <p className="text-xs font-semibold uppercase tracking-[0.1em] text-[#9cb499]">
                                 {record.data.request_label ?? record.data.request_type ?? "Support Request"}
                               </p>
-                              <p className="mt-2 font-display text-xl font-semibold text-[#f2f7f2]">
+                              <p className="mt-2 break-words font-display text-xl font-semibold text-[#f2f7f2]">
                                 {getRequesterName(record)}
                               </p>
                               <p className="mt-1 text-sm text-[#9eb39e]">
@@ -1412,7 +1412,7 @@ export default function AdminPage() {
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#d6b14f]">
                             Active Case Review
                           </p>
-                          <h2 className="mt-2 font-display text-3xl font-semibold text-[#f1f8f1]">
+                          <h2 className="mt-2 text-balance break-words font-display text-3xl font-semibold text-[#f1f8f1]">
                             {getRequesterName(selectedRequest)}
                           </h2>
                           <p className="mt-2 text-sm text-[#aebfaf]">
@@ -1420,7 +1420,7 @@ export default function AdminPage() {
                             {selectedRequest.data.member_name ?? "Unknown member"}
                           </p>
                         </div>
-                        <div className="rounded-[22px] border border-[#344834] bg-black/20 px-4 py-3 text-sm text-[#dbe5dc]">
+                        <div className="w-full min-w-0 rounded-[22px] border border-[#344834] bg-black/20 px-4 py-3 text-sm text-[#dbe5dc] sm:w-auto">
                           <p>
                             <span className="font-semibold text-[#f3f7f2]">Request ID:</span>{" "}
                             {selectedRequest.id}
@@ -1438,7 +1438,7 @@ export default function AdminPage() {
                     </div>
 
                     <div className="grid gap-5 px-5 py-5 sm:px-6 xl:grid-cols-[1.1fr_0.9fr]">
-                      <div className="grid gap-5">
+                      <div className="grid gap-5 [overflow-wrap:anywhere]">
                         <div className="grid gap-5 lg:grid-cols-2">
                           <article className="rounded-[24px] border border-[#314332] bg-black/20 p-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#d6b14f]">
@@ -1563,7 +1563,7 @@ export default function AdminPage() {
                         </article>
                       </div>
 
-                      <div className="grid gap-5">
+                      <div className="grid gap-5 [overflow-wrap:anywhere]">
                         <article className="rounded-[24px] border border-[#314332] bg-black/20 p-4">
                           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#d6b14f]">
                             <FileText className="h-4 w-4" />
@@ -1757,7 +1757,7 @@ export default function AdminPage() {
                                       key={entry.key}
                                       type="button"
                                       onClick={() => dispatchSocialProtocolMemo(entry, selectedRequest)}
-                                      className="inline-flex items-center gap-2 rounded-full border border-[#415540] bg-[#122015] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#dde7de] transition hover:border-[#6f846b]"
+                                      className="inline-flex items-center gap-2 rounded-full border border-[#415540] bg-[#122015] px-3 py-2 text-xs font-semibold text-[#dde7de] transition hover:border-[#6f846b]"
                                     >
                                       <Send className="h-3.5 w-3.5" />
                                       {entry.label}
@@ -1936,14 +1936,14 @@ export default function AdminPage() {
                                     href={entry.href}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="rounded-full border border-[#415540] bg-[#122015] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#dde7de]"
+                                    className="break-all rounded-full border border-[#415540] bg-[#122015] px-3 py-2 text-xs font-semibold text-[#dde7de]"
                                   >
                                     {entry.label}: {entry.value}
                                   </a>
                                 ) : (
                                   <span
                                     key={entry.key}
-                                    className="rounded-full border border-[#415540] bg-[#122015] px-3 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[#dde7de]"
+                                    className="break-all rounded-full border border-[#415540] bg-[#122015] px-3 py-2 text-xs font-semibold text-[#dde7de]"
                                   >
                                     {entry.label}: {entry.value}
                                   </span>
@@ -1984,7 +1984,7 @@ export default function AdminPage() {
                                   <img
                                     src={selectedRequest.data.identification.front_image_url}
                                     alt="Front identification document"
-                                    className="h-40 w-full rounded-[18px] border border-[#415540] object-cover"
+                                    className="h-44 w-full rounded-[18px] border border-[#415540] object-cover sm:h-40"
                                   />
                                 </a>
                               )}
@@ -1998,7 +1998,7 @@ export default function AdminPage() {
                                   <img
                                     src={selectedRequest.data.identification.back_image_url}
                                     alt="Back identification document"
-                                    className="h-40 w-full rounded-[18px] border border-[#415540] object-cover"
+                                    className="h-44 w-full rounded-[18px] border border-[#415540] object-cover sm:h-40"
                                   />
                                 </a>
                               )}

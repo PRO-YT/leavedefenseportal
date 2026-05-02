@@ -273,7 +273,7 @@ export function LanguageDock() {
         className="pointer-events-none absolute -left-[9999px] -top-[9999px] h-0 w-0 overflow-hidden opacity-0"
         aria-hidden="true"
       />
-      <div className="fixed inset-x-4 bottom-4 z-50 sm:inset-x-auto sm:bottom-5 sm:left-5">
+      <div className="fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 sm:inset-x-auto sm:bottom-[max(1.25rem,env(safe-area-inset-bottom))] sm:left-5">
         {isCollapsed ? (
           <button
             type="button"
@@ -286,7 +286,7 @@ export function LanguageDock() {
             <ChevronUp className="h-4 w-4" />
           </button>
         ) : (
-          <div className="w-[min(92vw,340px)] rounded-2xl border border-[#d6dce4] bg-white/95 p-3 text-[#1a2f4d] shadow-xl backdrop-blur">
+          <div className="max-h-[min(70vh,32rem)] w-[min(92vw,340px)] overflow-y-auto rounded-2xl border border-[#d6dce4] bg-white/95 p-3 text-[#1a2f4d] shadow-xl backdrop-blur">
             <div className="mb-2 flex items-center justify-between gap-3">
               <p className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[#2e456a]">
                 <Languages className="h-4 w-4" />

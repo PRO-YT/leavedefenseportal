@@ -24,7 +24,7 @@ export function FaqAccordion({ items }: { items: FaqItem[] }) {
           className="overflow-hidden rounded-xl border border-[#d0d5dc] bg-white"
         >
           <Accordion.Header>
-            <Accordion.Trigger className="group flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-base font-semibold text-[#14294b]">
+            <Accordion.Trigger className="group flex w-full items-start justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-[#14294b] sm:text-base">
               {item.question}
               <ChevronDown className="h-5 w-5 shrink-0 text-[#4e5f77] transition group-data-[state=open]:rotate-180" />
             </Accordion.Trigger>
