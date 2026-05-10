@@ -883,7 +883,7 @@ function DossierPageContent() {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(162,180,140,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(162,180,140,0.045)_1px,transparent_1px)] bg-[size:56px_56px] opacity-30" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_18px,#101610_18px,#101610_36px)]" />
 
-      <div className="relative mx-auto w-full max-w-[1440px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="relative mx-auto w-full max-w-full px-3 py-4 sm:px-6 sm:py-6 lg:px-8 xl:max-w-[1440px]">
         <header className="soft-outline panel-sheen mb-6 overflow-hidden rounded-[28px] border border-[#334531] bg-[linear-gradient(135deg,rgba(11,23,14,0.95),rgba(18,35,22,0.93))]">
           <div className="grid gap-4 border-b border-[#314332] px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#d8b85a] md:grid-cols-3 sm:px-7">
             <p>Controlled Unclassified Intake</p>
@@ -1430,9 +1430,9 @@ function DossierPageContent() {
       </div>
 
       {modalOpen && selectedServiceDetails && member && (
-        <div className="fixed inset-0 z-50 bg-black/80 sm:p-4">
-          <div className="flex h-full items-stretch sm:items-center sm:justify-center">
-            <div className="soft-outline flex min-h-dvh w-full flex-col overflow-hidden rounded-none border-y border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)] sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-5xl sm:rounded-[30px] sm:border">
+        <div className="fixed inset-0 z-50 bg-black/80 p-4 sm:p-4">
+          <div className="flex min-h-full w-full items-stretch sm:items-center sm:justify-center">
+            <div className="soft-outline flex min-h-[100dvh] w-full max-w-full flex-col overflow-hidden rounded-none border-y border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)] sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-5xl sm:rounded-[30px] sm:border">
             <div className="border-b border-[#334631] bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_14px,#0f160f_14px,#0f160f_28px)] px-5 py-2 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#11170f] sm:px-6">
               Confidential Support Intake Packet
             </div>

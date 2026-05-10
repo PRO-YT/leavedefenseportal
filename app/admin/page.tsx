@@ -1114,7 +1114,7 @@ export default function AdminPage() {
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,168,133,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(148,168,133,0.05)_1px,transparent_1px)] bg-[size:62px_62px] opacity-30" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-3 bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_18px,#0f150f_18px,#0f150f_36px)]" />
 
-      <div className="relative mx-auto w-full max-w-[1480px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="relative mx-auto w-full max-w-full px-3 py-4 sm:px-6 sm:py-6 lg:px-8 xl:max-w-[1480px]">
         <header className="soft-outline panel-sheen mb-6 overflow-hidden rounded-[30px] border border-[#233426] bg-[linear-gradient(135deg,rgba(11,20,14,0.97),rgba(15,27,18,0.95))]">
           <div className="grid gap-4 border-b border-[#2d4031] px-5 py-3 text-[0.72rem] font-semibold uppercase tracking-[0.22em] text-[#d6b14f] md:grid-cols-3 sm:px-7">
             <p>Restricted Logistics Console</p>

@@ -30,7 +30,7 @@ export function MemberIdSearchForm({ service }: MemberIdSearchFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mx-auto mt-8 flex w-full max-w-3xl flex-col overflow-hidden rounded-[1.4rem] border border-[#f4d747] bg-white shadow-lg shadow-black/10 sm:flex-row"
+      className="mx-auto mt-8 flex w-full max-w-full flex-col overflow-hidden rounded-[1.4rem] border border-[#f4d747] bg-white shadow-lg shadow-black/10 sm:flex-row"
     >
       <input
         type="text"
