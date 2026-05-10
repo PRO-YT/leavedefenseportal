@@ -1430,9 +1430,9 @@ function DossierPageContent() {
       </div>
 
       {modalOpen && selectedServiceDetails && member && (
-        <div className="fixed inset-0 z-50 bg-black/80 p-4 sm:p-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 p-4 sm:p-4">
           <div className="flex min-h-full w-full items-stretch sm:items-center sm:justify-center">
-            <div className="soft-outline flex min-h-[100dvh] w-full max-w-full flex-col overflow-hidden rounded-none border-y border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)] sm:min-h-0 sm:max-h-[calc(100dvh-2rem)] sm:max-w-5xl sm:rounded-[30px] sm:border">
+            <div className="soft-outline flex min-h-0 max-h-[calc(100dvh-2rem)] w-full max-w-full flex-col overflow-hidden rounded-none border-y border-[#42563f] bg-[linear-gradient(180deg,#0d1710_0%,#132117_100%)] sm:max-w-5xl sm:rounded-[30px] sm:border">
             <div className="border-b border-[#334631] bg-[repeating-linear-gradient(135deg,#d6b14f_0,#d6b14f_14px,#0f160f_14px,#0f160f_28px)] px-5 py-2 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#11170f] sm:px-6">
               Confidential Support Intake Packet
             </div>
